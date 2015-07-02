@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+var routeMap map[string]http.HandlerFunc
+
 var handlers = map[string]http.HandlerFunc{
 	"GetMe":    GetMe,
 	"PostMe":   PostMe,
@@ -62,6 +64,11 @@ func buildAPI() {
 	Build(api, routerFunc)
 }
 
+func buildAPIQueries() {
+	api, _ := ProcessRAML("fixtures/queries.raml")
+	Build(api, routerFunc)
+}
+
 func GetMe(w http.ResponseWriter, r *http.Request) {
 	//log.Fatal("GETME")
 	w.Write([]byte("GetMe"))
@@ -84,6 +91,10 @@ func HeadMe(w http.ResponseWriter, r *http.Request) {
 
 func DeleteMe(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("DeleteMe"))
+}
+
+func QueryMe(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("QueryMe"))
 }
 
 func TestMissingRaml(t *testing.T) {
@@ -111,6 +122,7 @@ func TestValidRamlGetAssignments(t *testing.T) {
 	router = RouterMock{}
 	// Build the API and assign handlers.
 	buildAPI()
+
 	// Cycle through the map and dispatch the appropriate
 	// HTTP requests to each one.
 	for name := range handlers {
