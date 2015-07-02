@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+var routeMap map[string]http.HandlerFunc
+
 var handlers = map[string]http.HandlerFunc{
 	"GetMe":    GetMe,
 	"PostMe":   PostMe,
@@ -62,6 +64,11 @@ func buildAPI() {
 	Build(api, routerFunc)
 }
 
+func buildAPIQueries() {
+	api, _ := ProcessRAML("fixtures/queries.raml")
+	Build(api, routerFunc)
+}
+
 func GetMe(w http.ResponseWriter, r *http.Request) {
 	//log.Fatal("GETME")
 	w.Write([]byte("GetMe"))
@@ -84,6 +91,10 @@ func HeadMe(w http.ResponseWriter, r *http.Request) {
 
 func DeleteMe(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("DeleteMe"))
+}
+
+func QueryMe(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("QueryMe"))
 }
 
 func TestMissingRaml(t *testing.T) {
@@ -111,6 +122,7 @@ func TestValidRamlGetAssignments(t *testing.T) {
 	router = RouterMock{}
 	// Build the API and assign handlers.
 	buildAPI()
+
 	// Cycle through the map and dispatch the appropriate
 	// HTTP requests to each one.
 	for name := range handlers {
@@ -136,6 +148,62 @@ func TestValidRamlGetAssignments(t *testing.T) {
 		}
 		if res.Body.String() != name {
 			t.Fatalf("Expected to get %s response from %s, got %s\n", name, name, res.Body.String())
+		}
+	}
+}
+
+func TestValidQueryString(t *testing.T) {
+	router = RouterMock{}
+	// Build the API and assign handlers.
+	buildAPIQueries()
+
+	validQueries := []string{"gb", "us"}
+
+	for _, query := range validQueries {
+		req, err := http.NewRequest("GET", "/query?country="+query, nil)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		res := httptest.NewRecorder()
+		// We need to send this to the mux to ensure we are testing the
+		// router interface i.e. the handlers have been assigned when the
+		// API was built.
+		router.ServeHTTP(res, req)
+
+		// Now make sure every handler returns with a 200 OK and the
+		// correct response body.
+		if res.Code != 200 {
+			t.Fatalf("Expected a 200 response from QueryMe with query parameter %s, got %d\n", query, res.Code)
+		}
+	}
+}
+
+func TestInValidQueryString(t *testing.T) {
+	router = RouterMock{}
+	// Build the API and assign handlers.
+	buildAPIQueries()
+
+	invalidQueries := []string{""}
+
+	for _, query := range invalidQueries {
+		req, err := http.NewRequest("GET", "/query?country="+query, nil)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		res := httptest.NewRecorder()
+		// We need to send this to the mux to ensure we are testing the
+		// router interface i.e. the handlers have been assigned when the
+		// API was built.
+		router.ServeHTTP(res, req)
+
+		// Now make sure every handler returns with a 200 OK and the
+		// correct response body.
+		if res.Code != 404 {
+			t.Fatalf("Expected a 404 response from QueryMe, got %d\n", res.Code)
 		}
 	}
 }

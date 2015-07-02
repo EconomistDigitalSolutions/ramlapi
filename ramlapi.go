@@ -27,12 +27,17 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 	log.Println("processing", name, "resource")
 	log.Println("path: ", resourcepath)
 
-	for verb, handler := range ResourceVerbs(resource) {
+	for verb, details := range ResourceVerbs(resource) {
 		log.Println("--- " + verb)
 		data := map[string]string{
-			"verb":    verb,
-			"path":    resourcepath,
-			"handler": handler,
+			"verb":              verb,
+			"path":              resourcepath,
+			"handler":           details["handler"],
+			"query":             details["query"],
+			"query_type":        details["query_type"],
+			"query_description": details["query_description"],
+			"query_example":     details["query_example"],
+			"query_pattern":     details["query_pattern"],
 		}
 		routerFunc(data)
 	}
@@ -54,26 +59,47 @@ func Build(api *raml.APIDefinition, routerFunc func(data map[string]string)) {
 
 // ResourceVerbs assembles resource method types into a
 // map of verbs to handler names.
-func ResourceVerbs(resource *raml.Resource) map[string]string {
-	var verbs = make(map[string]string)
+func ResourceVerbs(resource *raml.Resource) map[string]map[string]string {
+	var verbs = make(map[string]map[string]string)
 
 	if resource.Get != nil {
-		verbs["GET"] = resource.Get.DisplayName
+		verbs["GET"] = map[string]string{
+			"handler": resource.Get.DisplayName,
+		}
+		if len(resource.Get.QueryParameters) >= 1 {
+			for _, value := range resource.Get.QueryParameters {
+				verbs["GET"]["query"] = value.DisplayName
+				verbs["GET"]["query_type"] = value.Type
+				verbs["GET"]["query_description"] = value.Description
+				verbs["GET"]["query_example"] = value.Example
+				verbs["GET"]["query_pattern"] = *value.Pattern
+			}
+		}
 	}
 	if resource.Post != nil {
-		verbs["POST"] = resource.Post.DisplayName
+		verbs["POST"] = map[string]string{
+			"handler": resource.Post.DisplayName,
+		}
 	}
 	if resource.Put != nil {
-		verbs["PUT"] = resource.Put.DisplayName
+		verbs["PUT"] = map[string]string{
+			"handler": resource.Put.DisplayName,
+		}
 	}
 	if resource.Patch != nil {
-		verbs["PATCH"] = resource.Patch.DisplayName
+		verbs["PATCH"] = map[string]string{
+			"handler": resource.Patch.DisplayName,
+		}
 	}
 	if resource.Head != nil {
-		verbs["HEAD"] = resource.Head.DisplayName
+		verbs["HEAD"] = map[string]string{
+			"handler": resource.Head.DisplayName,
+		}
 	}
 	if resource.Delete != nil {
-		verbs["DELETE"] = resource.Delete.DisplayName
+		verbs["DELETE"] = map[string]string{
+			"handler": resource.Delete.DisplayName,
+		}
 	}
 
 	return verbs

@@ -1,0 +1,20 @@
+#%RAML 0.8
+title: gref
+version: 1
+
+baseUri: http://github.com/buddhamagnet/ramlapi
+documentation:
+  -  title: Overview
+
+/query:
+  description: Test API for the ramlapi package with added query string
+  get:
+    displayName: QueryMe
+    queryParameters:
+      country:
+        displayName: country
+        type: string
+        description: User country code
+        example: GB
+        required: true
+        pattern: "{[a-z]{2}}"
