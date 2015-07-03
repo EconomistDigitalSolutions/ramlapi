@@ -1,12 +1,11 @@
 package ramlapi
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
-	"strings"
+	_ "regexp"
+	_ "strings"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -35,19 +34,13 @@ func (router *RouterMock) Consume(data map[string]string) {
 	}
 }
 
-func (router *RouterMock) String() {
-	for route, data := range router.routes {
-		fmt.Println(route)
-		for k, v := range data {
-			fmt.Println(k, v)
-		}
-	}
-}
-
 func (router *RouterMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.String()
 	if _, found := router.routes[path]; found {
-		if _, found := router.routes[path][r.Method]; found {
+		log.Printf("REQUEST METHOD: %s\n", r.Method)
+		log.Fatal(router.routes)
+		if _, found = router.routes[path][r.Method]; found {
+			log.Fatal(router.routes[path][r.Method])
 			handler := handlers[(router.routes[path][r.Method])]
 			handler(w, r)
 		}
@@ -125,39 +118,34 @@ func TestValidRaml(t *testing.T) {
 	}
 }
 
-func TestValidRamlGetAssignments(t *testing.T) {
+func TestValidRamlGetAssignmentsMock(t *testing.T) {
+	routerMock = RouterMock{}
 	// Build the API and assign handlers.
-	buildAPI()
-	// Cycle through the map and dispatch the appropriate
-	// HTTP requests to each one.
-	for name := range handlers {
+	buildAPIMock()
 
-		matcher := regexp.MustCompile("^(Get|Post|Put|Patch|Head|Delete)")
-		match := matcher.FindSubmatch([]byte(name))
-		req, err := http.NewRequest(strings.ToUpper(string(match[0])), "/testapi", nil)
+	req, err := http.NewRequest("GET", "/testapi", nil)
 
-		if err != nil {
-			t.Fatal(err)
-		}
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		res := httptest.NewRecorder()
-		// We need to send this to the mux to ensure we are testing the
-		// router interface i.e. the handlers have been assigned when the
-		// API was built.
-		router.ServeHTTP(res, req)
+	res := httptest.NewRecorder()
+	// We need to send this to the mux to ensure we are testing the
+	// router interface i.e. the handlers have been assigned when the
+	// API was built.
+	routerMock.ServeHTTP(res, req)
 
-		// Now make sure every handler returns with a 200 OK and the
-		// correct response body.
-		if res.Code != 200 {
-			t.Fatalf("Expected a 200 response from %s, got %d\n", name, res.Code)
-		}
-		if res.Body.String() != name {
-			t.Fatalf("Expected to get %s response from %s, got %s\n", name, name, res.Body.String())
-		}
+	// Now make sure every handler returns with a 200 OK and the
+	// correct response body.
+	if res.Code != 200 {
+		t.Fatalf("Expected a 200 response from %s, got %d\n", "GetMe", res.Code)
+	}
+	if res.Body.String() != "GetMe" {
+		t.Fatalf("Expected to get %s response from %s, got %s\n", "GetMe", "GetMe", res.Body.String())
 	}
 }
 
-func TestValidRamlGetAssignmentsMock(t *testing.T) {
+/*func TestValidRamlGetAssignmentsMock(t *testing.T) {
 	routerMock = RouterMock{}
 	// Build the API and assign handlers.
 	buildAPIMock()
@@ -188,4 +176,4 @@ func TestValidRamlGetAssignmentsMock(t *testing.T) {
 			t.Fatalf("Expected to get %s response from %s, got %s\n", name, name, res.Body.String())
 		}
 	}
-}
+}*/
