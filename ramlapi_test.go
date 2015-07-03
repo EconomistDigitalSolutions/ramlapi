@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	_ "regexp"
-	_ "strings"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -24,19 +24,29 @@ var router = mux.NewRouter().StrictSlash(true)
 var routerMock RouterMock
 
 type RouterMock struct {
-	routes map[string]map[string]string
+	routes [][]string
 }
 
 func (router *RouterMock) Consume(data map[string]string) {
-	router.routes = make(map[string]map[string]string)
-	router.routes[data["path"]] = map[string]string{
-		data["verb"]: data["handler"],
-	}
+	router.routes = append(router.routes, []string{
+		data["path"],
+		data["verb"],
+		data["handler"],
+	})
 }
 
 func (router *RouterMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.String()
-	if _, found := router.routes[path]; found {
+	log.Printf("PATH: %s\n", path)
+	log.Printf("REQUEST METHOD: %s\n", r.Method)
+	for _, endpoint := range router.routes {
+		if router.Registered(path, endpoint) && router.Registered(r.Method, endpoint) {
+			handler := handlers[endpoint[2]]
+			handler(w, r)
+		}
+	}
+
+	/*if _, found := router.routes[path]; found {
 		log.Printf("REQUEST METHOD: %s\n", r.Method)
 		log.Fatal(router.routes)
 		if _, found = router.routes[path][r.Method]; found {
@@ -44,7 +54,16 @@ func (router *RouterMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			handler := handlers[(router.routes[path][r.Method])]
 			handler(w, r)
 		}
+	}*/
+}
+
+func (router *RouterMock) Registered(a string, route []string) bool {
+	for _, b := range route {
+		if b == a {
+			return true
+		}
 	}
+	return false
 }
 
 func routerFunc(data map[string]string) {
@@ -69,31 +88,26 @@ func buildAPIMock() {
 }
 
 func GetMe(w http.ResponseWriter, r *http.Request) {
-	log.Fatal("GETME")
+	//log.Fatal("GETME")
 	w.Write([]byte("GetMe"))
 }
 func PostMe(w http.ResponseWriter, r *http.Request) {
-	log.Fatal("POSTME")
 	w.Write([]byte("PostMe"))
 }
 
 func PutMe(w http.ResponseWriter, r *http.Request) {
-	log.Fatal("PUTME")
 	w.Write([]byte("PutMe"))
 }
 
 func PatchMe(w http.ResponseWriter, r *http.Request) {
-	log.Fatal("PATCHME")
 	w.Write([]byte("PatchMe"))
 }
 
 func HeadMe(w http.ResponseWriter, r *http.Request) {
-	log.Fatal("HEADME")
 	w.Write([]byte("HeadMe"))
 }
 
 func DeleteMe(w http.ResponseWriter, r *http.Request) {
-	log.Fatal("DELETEME")
 	w.Write([]byte("DeleteMe"))
 }
 
@@ -118,7 +132,7 @@ func TestValidRaml(t *testing.T) {
 	}
 }
 
-func TestValidRamlGetAssignmentsMock(t *testing.T) {
+/*func TestValidRamlGetAssignmentsMock(t *testing.T) {
 	routerMock = RouterMock{}
 	// Build the API and assign handlers.
 	buildAPIMock()
@@ -143,9 +157,9 @@ func TestValidRamlGetAssignmentsMock(t *testing.T) {
 	if res.Body.String() != "GetMe" {
 		t.Fatalf("Expected to get %s response from %s, got %s\n", "GetMe", "GetMe", res.Body.String())
 	}
-}
+}*/
 
-/*func TestValidRamlGetAssignmentsMock(t *testing.T) {
+func TestValidRamlGetAssignmentsMock(t *testing.T) {
 	routerMock = RouterMock{}
 	// Build the API and assign handlers.
 	buildAPIMock()
@@ -176,4 +190,4 @@ func TestValidRamlGetAssignmentsMock(t *testing.T) {
 			t.Fatalf("Expected to get %s response from %s, got %s\n", name, name, res.Body.String())
 		}
 	}
-}*/
+}
