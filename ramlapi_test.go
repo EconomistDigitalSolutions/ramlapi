@@ -107,7 +107,7 @@ func TestValidRaml(t *testing.T) {
 	}
 }
 
-func TestValidRamlGetAssignmentsMock(t *testing.T) {
+func TestValidRamlGetAssignments(t *testing.T) {
 	router = RouterMock{}
 	// Build the API and assign handlers.
 	buildAPI()
