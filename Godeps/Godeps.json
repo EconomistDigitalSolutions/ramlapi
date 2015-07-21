@@ -1,0 +1,27 @@
+{
+	"ImportPath": "github.com/EconomistDigitalSolutions/ramlapi",
+	"GoVersion": "go1.4",
+	"Deps": [
+		{
+			"ImportPath": "github.com/buddhamagnet/raml",
+			"Rev": "685a1e38a80e22bc6c9f213b7c0b8e2aa30f7ae6"
+		},
+		{
+			"ImportPath": "github.com/buddhamagnet/yaml",
+			"Rev": "e401b2b026855a4fa8e7014d553ae5bdfccb21cd"
+		},
+		{
+			"ImportPath": "github.com/go-kit/kit/log",
+			"Rev": "60805884e061fbbffd3ec70645b2d3907dd89c71"
+		},
+		{
+			"ImportPath": "gopkg.in/logfmt.v0",
+			"Rev": "c50dc9aa845e681529d8e49d3dc11ec0195aacac"
+		},
+		{
+			"ImportPath": "gopkg.in/stack.v1",
+			"Comment": "v1.1",
+			"Rev": "3311a467df6af5844aa1b9d748e4d004b109b984"
+		}
+	]
+}
