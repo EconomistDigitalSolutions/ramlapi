@@ -2,10 +2,21 @@ package ramlapi
 
 import (
 	"fmt"
-	"log"
+	"os"
 
 	"github.com/buddhamagnet/raml"
+
+	stdlog "log"
+
+	kitlog "github.com/go-kit/kit/log"
 )
+
+var logger kitlog.Logger
+
+func init() {
+	logger = kitlog.NewJSONLogger(os.Stdout)
+	stdlog.SetOutput(kitlog.NewStdlibAdapter(logger))
+}
 
 // ProcessRAML processes a RAML file and returns an API definition.
 func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
@@ -24,11 +35,12 @@ func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
 func processResource(parent, name string, resource *raml.Resource, routerFunc func(data map[string]string)) string {
 
 	var resourcepath = parent + name
-	log.Println("processing", name, "resource")
-	log.Println("path: ", resourcepath)
+
+	logger.Log("channel", "ramlapi", "message", fmt.Sprintf("processing %s resource", name))
+	logger.Log("channel", "ramlapi", "message", fmt.Sprintf("path: %s", resourcepath))
 
 	for verb, handler := range ResourceVerbs(resource) {
-		log.Println("--- " + verb)
+		logger.Log("channel", "ramlapi", "message", fmt.Sprintf("--- %s", verb))
 		data := map[string]string{
 			"verb":    verb,
 			"path":    resourcepath,
