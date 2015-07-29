@@ -30,14 +30,16 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 	for verb, details := range ResourceVerbs(resource) {
 		log.Println("--- " + verb)
 		data := map[string]string{
-			"verb":              verb,
-			"path":              resourcepath,
-			"handler":           details["handler"],
-			"query":             details["query"],
-			"query_type":        details["query_type"],
-			"query_description": details["query_description"],
-			"query_example":     details["query_example"],
-			"query_pattern":     details["query_pattern"],
+			"verb":    verb,
+			"path":    resourcepath,
+			"handler": details["handler"],
+		}
+		if details["query"] != "" {
+			data["query"] = details["query"]
+			data["query_type"] = details["query_type"]
+			data["query_description"] = details["query_description"]
+			data["query_example"] = details["query_example"]
+			data["query_pattern"] = details["query_pattern"]
 		}
 		routerFunc(data)
 	}
