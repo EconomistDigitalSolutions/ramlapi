@@ -1,5 +1,7 @@
 This package is designed to work with [RAML](http://raml.org) files and build the appropriate handlers and routing rules in Go projects.
 
+[![GoDoc](https://godoc.org/github.com/EconomistDigitalSolutions/ramlapi?status.svg)](https://godoc.org/github.com/EconomistDigitalSolutions/ramlapi)
+
 The ramlapi codebase contains two packages:
 
 * Ramlapi - used to parse a RAML file and wire it up to a router.
