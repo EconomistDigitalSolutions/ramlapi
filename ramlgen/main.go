@@ -76,10 +76,10 @@ func generateResource(parent, name string, resource *raml.Resource, t *template.
 	}
 
 	for verb, n := range ramlapi.ResourceVerbs(resource) {
-		if n == "" {
+		if len(n) == 0 {
 			log.Fatalf("no handler name specified for %s via %s\n", resourcepath, verb)
 		}
-		err := t.Execute(f, HandlerInfo{n, verb, resourcepath, resource.Description})
+		err := t.Execute(f, HandlerInfo{n["handler"], verb, resourcepath, resource.Description})
 		if err != nil {
 			log.Println("executing template:", err)
 		}
@@ -102,10 +102,10 @@ func generateMap(parent, name string, resource *raml.Resource, e *template.Templ
 	}
 
 	for verb, n := range ramlapi.ResourceVerbs(resource) {
-		if n == "" {
+		if len(n) == 0 {
 			log.Fatalf("no handler name specified for %s via %s\n", resourcepath, verb)
 		}
-		err := e.Execute(f, RouteMapEntry{n, n})
+		err := e.Execute(f, RouteMapEntry{n["handler"], n["handler"]})
 		if err != nil {
 			log.Println("executing template:", err)
 		}
