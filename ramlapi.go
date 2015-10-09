@@ -7,12 +7,13 @@ import (
 	"github.com/buddhamagnet/raml"
 )
 
-// ProcessRAML processes a RAML file and returns an API definition.
-func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
-	routes, err := raml.ParseFile(ramlFile)
+// Process processes a RAML file and returns an API definition.
+func Process(file string) (*raml.APIDefinition, error) {
+	routes, err := raml.ParseFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("Failed parsing RAML file: %s\n", err.Error())
 	}
+
 	return routes, nil
 }
 
@@ -21,17 +22,17 @@ func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
 // as an argument that is invoked with the verb, resource path and handler as
 // the resources are processed, so the calling code can use pat, mux, httprouter
 // or whatever router they desire and we don't need to know about it.
-func processResource(parent, name string, resource *raml.Resource, routerFunc func(data map[string]string)) string {
+func processResource(parent, name string, res *raml.Resource, fun func(data map[string]string)) string {
+	path := parent + name
 
-	var resourcepath = parent + name
 	log.Println("processing", name, "resource")
-	log.Println("path: ", resourcepath)
+	log.Println("path: ", path)
 
-	for verb, details := range ResourceVerbs(resource) {
+	for verb, details := range ResourceVerbs(res) {
 		log.Println("--- " + verb)
 		data := map[string]string{
 			"verb":    verb,
-			"path":    resourcepath,
+			"path":    path,
 			"handler": details["handler"],
 		}
 		if details["query"] != "" {
@@ -41,35 +42,35 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 			data["query_example"] = details["query_example"]
 			data["query_pattern"] = details["query_pattern"]
 		}
-		routerFunc(data)
+		fun(data)
 	}
 
 	// Get all children.
-	for nestname, nested := range resource.Nested {
-		return processResource(resourcepath, nestname, nested, routerFunc)
+	for name, n := range res.Nested {
+		return processResource(path, name, n, fun)
 	}
-	return resourcepath
+	return path
 }
 
 // Build takes a RAML API definition, a router and a routing map,
 // and wires them all together.
-func Build(api *raml.APIDefinition, routerFunc func(data map[string]string)) {
-	for name, resource := range api.Resources {
-		processResource("", name, &resource, routerFunc)
+func Build(api *raml.APIDefinition, fun func(data map[string]string)) {
+	for name, res := range api.Resources {
+		processResource("", name, &res, fun)
 	}
 }
 
 // ResourceVerbs assembles resource method types into a
 // map of verbs to handler names.
-func ResourceVerbs(resource *raml.Resource) map[string]map[string]string {
+func ResourceVerbs(res *raml.Resource) map[string]map[string]string {
 	var verbs = make(map[string]map[string]string)
 
-	if resource.Get != nil {
+	if res.Get != nil {
 		verbs["GET"] = map[string]string{
-			"handler": resource.Get.DisplayName,
+			"handler": res.Get.DisplayName,
 		}
-		if len(resource.Get.QueryParameters) >= 1 {
-			for _, value := range resource.Get.QueryParameters {
+		if len(res.Get.QueryParameters) >= 1 {
+			for _, value := range res.Get.QueryParameters {
 				verbs["GET"]["query"] = value.DisplayName
 				verbs["GET"]["query_type"] = value.Type
 				verbs["GET"]["query_description"] = value.Description
@@ -78,29 +79,29 @@ func ResourceVerbs(resource *raml.Resource) map[string]map[string]string {
 			}
 		}
 	}
-	if resource.Post != nil {
+	if res.Post != nil {
 		verbs["POST"] = map[string]string{
-			"handler": resource.Post.DisplayName,
+			"handler": res.Post.DisplayName,
 		}
 	}
-	if resource.Put != nil {
+	if res.Put != nil {
 		verbs["PUT"] = map[string]string{
-			"handler": resource.Put.DisplayName,
+			"handler": res.Put.DisplayName,
 		}
 	}
-	if resource.Patch != nil {
+	if res.Patch != nil {
 		verbs["PATCH"] = map[string]string{
-			"handler": resource.Patch.DisplayName,
+			"handler": res.Patch.DisplayName,
 		}
 	}
-	if resource.Head != nil {
+	if res.Head != nil {
 		verbs["HEAD"] = map[string]string{
-			"handler": resource.Head.DisplayName,
+			"handler": res.Head.DisplayName,
 		}
 	}
-	if resource.Delete != nil {
+	if res.Delete != nil {
 		verbs["DELETE"] = map[string]string{
-			"handler": resource.Delete.DisplayName,
+			"handler": res.Delete.DisplayName,
 		}
 	}
 
