@@ -1,4 +1,4 @@
-package ramlapi
+package ramlapi_test
 
 import (
 	"log"
@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-)
 
-var routeMap map[string]http.HandlerFunc
+	"github.com/EconomistDigitalSolutions/ramlapi"
+)
 
 var handlers = map[string]http.HandlerFunc{
 	"GetMe":    GetMe,
@@ -20,7 +20,11 @@ var handlers = map[string]http.HandlerFunc{
 	"DeleteMe": DeleteMe,
 }
 
+var matcher = regexp.MustCompile("^(Get|Post|Put|Patch|Head|Delete)")
+
 var router RouterMock
+
+var routeMap map[string]http.HandlerFunc
 
 type RouterMock struct {
 	routes [][]string
@@ -60,19 +64,19 @@ func routerFunc(data map[string]string) {
 }
 
 func buildAPI() {
-	api, _ := ProcessRAML("fixtures/valid.raml")
-	Build(api, routerFunc)
+	api, _ := ramlapi.Process("fixtures/valid.raml")
+	ramlapi.Build(api, routerFunc)
 }
 
 func buildAPIQueries() {
-	api, _ := ProcessRAML("fixtures/queries.raml")
-	Build(api, routerFunc)
+	api, _ := ramlapi.Process("fixtures/queries.raml")
+	ramlapi.Build(api, routerFunc)
 }
 
 func GetMe(w http.ResponseWriter, r *http.Request) {
-	//log.Fatal("GETME")
 	w.Write([]byte("GetMe"))
 }
+
 func PostMe(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("PostMe"))
 }
@@ -93,26 +97,22 @@ func DeleteMe(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("DeleteMe"))
 }
 
-func QueryMe(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("QueryMe"))
-}
-
 func TestMissingRaml(t *testing.T) {
-	_, err := ProcessRAML("fixtures/missing.raml")
+	_, err := ramlapi.Process("fixtures/missing.raml")
 	if err == nil {
 		t.Fatal("Expected error with missing RAML file")
 	}
 }
 
 func TestInvalidRaml(t *testing.T) {
-	_, err := ProcessRAML("fixtures/invalid.raml")
+	_, err := ramlapi.Process("fixtures/invalid.raml")
 	if err == nil {
 		t.Fatal("Expected error with invalid RAML file")
 	}
 }
 
 func TestValidRaml(t *testing.T) {
-	_, err := ProcessRAML("fixtures/valid.raml")
+	_, err := ramlapi.Process("fixtures/valid.raml")
 	if err != nil {
 		t.Fatalf("Expected good response with valid RAML file, got %v\n", err)
 	}
@@ -127,7 +127,6 @@ func TestValidRamlGetAssignments(t *testing.T) {
 	// HTTP requests to each one.
 	for name := range handlers {
 
-		matcher := regexp.MustCompile("^(Get|Post|Put|Patch|Head|Delete)")
 		match := matcher.FindSubmatch([]byte(name))
 		req, err := http.NewRequest(strings.ToUpper(string(match[0])), "/testapi", nil)
 
