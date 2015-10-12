@@ -74,7 +74,11 @@ func ResourceVerbs(resource *raml.Resource) map[string]map[string]string {
 				verbs["GET"]["query_type"] = value.Type
 				verbs["GET"]["query_description"] = value.Description
 				verbs["GET"]["query_example"] = value.Example
-				verbs["GET"]["query_pattern"] = *value.Pattern
+				if value.Pattern == nil {
+					verbs["GET"]["query_pattern"] = ""
+				} else {
+					verbs["GET"]["query_pattern"] = *value.Pattern
+				}
 			}
 		}
 	}
