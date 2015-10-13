@@ -46,8 +46,7 @@ func ResourceVerbs(res *raml.Resource) map[string]map[string]string {
 		}
 	}
 
-	umg := map[string]*raml.Method{
-
+	mappings := map[string]*raml.Method{
 		"POST":   res.Post,
 		"PUT":    res.Put,
 		"PATCH":  res.Patch,
@@ -55,32 +54,13 @@ func ResourceVerbs(res *raml.Resource) map[string]map[string]string {
 		"HEAD":   res.Head,
 	}
 
-	log.Fatal(umg)
+	for verb, meth := range mappings {
+		if meth != nil {
+			verbs[verb] = map[string]string{
+				"handler": meth.DisplayName,
+			}
+		}
 
-	if res.Post != nil {
-		verbs["POST"] = map[string]string{
-			"handler": res.Post.DisplayName,
-		}
-	}
-	if res.Put != nil {
-		verbs["PUT"] = map[string]string{
-			"handler": res.Put.DisplayName,
-		}
-	}
-	if res.Patch != nil {
-		verbs["PATCH"] = map[string]string{
-			"handler": res.Patch.DisplayName,
-		}
-	}
-	if res.Head != nil {
-		verbs["HEAD"] = map[string]string{
-			"handler": res.Head.DisplayName,
-		}
-	}
-	if res.Delete != nil {
-		verbs["DELETE"] = map[string]string{
-			"handler": res.Delete.DisplayName,
-		}
 	}
 
 	return verbs
