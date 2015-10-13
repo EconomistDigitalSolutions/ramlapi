@@ -28,7 +28,7 @@ in the RAML file. The router can then hook the data up however it likes.
 
 ```go
 router = mux.NewRouter().StrictSlash(true)
-api, err := ramlapi.ProcessRAML(f)
+api, err := ramlapi.Process(f)
     if err != nil {
 		log.Fatal(err)
 	}
