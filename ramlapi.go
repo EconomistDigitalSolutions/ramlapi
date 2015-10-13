@@ -3,9 +3,18 @@ package ramlapi
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/buddhamagnet/raml"
 )
+
+// Build takes a RAML API definition, a router and a routing map,
+// and wires them all together.
+func Build(api *raml.APIDefinition, fun func(data map[string]string)) {
+	for name, res := range api.Resources {
+		processResource("", name, &res, fun)
+	}
+}
 
 // Process processes a RAML file and returns an API definition.
 func Process(file string) (*raml.APIDefinition, error) {
@@ -15,49 +24,6 @@ func Process(file string) (*raml.APIDefinition, error) {
 	}
 
 	return routes, nil
-}
-
-// processResource recursively process resources and their nested children
-// and returns the path so far for the children. The function takes a routerFunc
-// as an argument that is invoked with the verb, resource path and handler as
-// the resources are processed, so the calling code can use pat, mux, httprouter
-// or whatever router they desire and we don't need to know about it.
-func processResource(parent, name string, res *raml.Resource, fun func(data map[string]string)) string {
-	path := parent + name
-
-	log.Println("processing", name, "resource")
-	log.Println("path: ", path)
-
-	for verb, details := range ResourceVerbs(res) {
-		log.Println("--- " + verb)
-		data := map[string]string{
-			"verb":    verb,
-			"path":    path,
-			"handler": details["handler"],
-		}
-		if details["query"] != "" {
-			data["query"] = details["query"]
-			data["query_type"] = details["query_type"]
-			data["query_description"] = details["query_description"]
-			data["query_example"] = details["query_example"]
-			data["query_pattern"] = details["query_pattern"]
-		}
-		fun(data)
-	}
-
-	// Get all children.
-	for name, n := range res.Nested {
-		return processResource(path, name, n, fun)
-	}
-	return path
-}
-
-// Build takes a RAML API definition, a router and a routing map,
-// and wires them all together.
-func Build(api *raml.APIDefinition, fun func(data map[string]string)) {
-	for name, res := range api.Resources {
-		processResource("", name, &res, fun)
-	}
 }
 
 // ResourceVerbs assembles resource method types into a
@@ -79,6 +45,18 @@ func ResourceVerbs(res *raml.Resource) map[string]map[string]string {
 			}
 		}
 	}
+
+	umg := map[string]*raml.Method{
+
+		"POST":   res.Post,
+		"PUT":    res.Put,
+		"PATCH":  res.Patch,
+		"DELETE": res.Delete,
+		"HEAD":   res.Head,
+	}
+
+	log.Fatal(umg)
+
 	if res.Post != nil {
 		verbs["POST"] = map[string]string{
 			"handler": res.Post.DisplayName,
@@ -106,4 +84,45 @@ func ResourceVerbs(res *raml.Resource) map[string]map[string]string {
 	}
 
 	return verbs
+}
+
+// processResource recursively process resources and their nested children
+// and returns the path so far for the children. The function takes a routerFunc
+// as an argument that is invoked with the verb, resource path and handler as
+// the resources are processed, so the calling code can use pat, mux, httprouter
+// or whatever router they desire and we don't need to know about it.
+func processResource(parent, name string, res *raml.Resource, fun func(data map[string]string)) string {
+	path := parent + name
+
+	logg("processing", name, "resource")
+	logg("path: ", path)
+
+	for verb, details := range ResourceVerbs(res) {
+		logg("--- " + verb)
+		data := map[string]string{
+			"verb":    verb,
+			"path":    path,
+			"handler": details["handler"],
+		}
+		if details["query"] != "" {
+			data["query"] = details["query"]
+			data["query_type"] = details["query_type"]
+			data["query_description"] = details["query_description"]
+			data["query_example"] = details["query_example"]
+			data["query_pattern"] = details["query_pattern"]
+		}
+		fun(data)
+	}
+
+	// Get all children.
+	for name, n := range res.Nested {
+		return processResource(path, name, n, fun)
+	}
+	return path
+}
+
+func logg(args ...string) {
+	if os.Getenv("RAMLAPI_LOGGING") != "" {
+		log.Println(args)
+	}
 }
