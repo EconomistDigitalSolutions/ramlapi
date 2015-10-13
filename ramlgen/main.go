@@ -23,7 +23,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	api, err := ramlapi.ProcessRAML(ramlFile)
+	api, err := ramlapi.Process(ramlFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func generateMap(parent, name string, resource *raml.Resource, e *template.Templ
 	}
 
 	// Get all children.
-	for nestname, nested := range resource.Nested {
-		generateMap(resourcepath, nestname, nested, e, f)
+	for nestname, n := range resource.Nested {
+		generateMap(resourcepath, nestname, n, e, f)
 	}
 }
