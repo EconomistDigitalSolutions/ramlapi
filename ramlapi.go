@@ -102,7 +102,7 @@ func processResource(parent, name string, res *raml.Resource, fun func(data map[
 }
 
 func logg(args ...string) {
-	if os.Getenv("RAMLAPI_LOGGING") != "" {
+	if os.Getenv("RAMLAPI_LOGGING") == "" {
 		log.Println(args)
 	}
 }

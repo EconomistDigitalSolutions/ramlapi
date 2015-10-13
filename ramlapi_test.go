@@ -1,4 +1,4 @@
-package ramlapi
+package ramlapi_test
 
 import (
 	"log"
@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/EconomistDigitalSolutions/ramlapi"
 )
 
 var routeMap map[string]http.HandlerFunc
@@ -60,13 +62,13 @@ func routerFunc(data map[string]string) {
 }
 
 func buildAPI() {
-	api, _ := ProcessRAML("fixtures/valid.raml")
-	Build(api, routerFunc)
+	api, _ := ramlapi.Process("fixtures/valid.raml")
+	ramlapi.Build(api, routerFunc)
 }
 
 func buildAPIQueries() {
-	api, _ := ProcessRAML("fixtures/queries.raml")
-	Build(api, routerFunc)
+	api, _ := ramlapi.Process("fixtures/queries.raml")
+	ramlapi.Build(api, routerFunc)
 }
 
 func GetMe(w http.ResponseWriter, r *http.Request) {
@@ -98,21 +100,21 @@ func QueryMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestMissingRaml(t *testing.T) {
-	_, err := ProcessRAML("fixtures/missing.raml")
+	_, err := ramlapi.Process("fixtures/missing.raml")
 	if err == nil {
 		t.Fatal("Expected error with missing RAML file")
 	}
 }
 
 func TestInvalidRaml(t *testing.T) {
-	_, err := ProcessRAML("fixtures/invalid.raml")
+	_, err := ramlapi.Process("fixtures/invalid.raml")
 	if err == nil {
 		t.Fatal("Expected error with invalid RAML file")
 	}
 }
 
 func TestValidRaml(t *testing.T) {
-	_, err := ProcessRAML("fixtures/valid.raml")
+	_, err := ramlapi.Process("fixtures/valid.raml")
 	if err != nil {
 		t.Fatalf("Expected good response with valid RAML file, got %v\n", err)
 	}
