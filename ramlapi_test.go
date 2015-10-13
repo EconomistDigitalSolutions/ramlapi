@@ -11,8 +11,6 @@ import (
 	"github.com/EconomistDigitalSolutions/ramlapi"
 )
 
-var routeMap map[string]http.HandlerFunc
-
 var handlers = map[string]http.HandlerFunc{
 	"GetMe":    GetMe,
 	"PostMe":   PostMe,
@@ -22,7 +20,11 @@ var handlers = map[string]http.HandlerFunc{
 	"DeleteMe": DeleteMe,
 }
 
+var matcher = regexp.MustCompile("^(Get|Post|Put|Patch|Head|Delete)")
+
 var router RouterMock
+
+var routeMap map[string]http.HandlerFunc
 
 type RouterMock struct {
 	routes [][]string
@@ -72,9 +74,9 @@ func buildAPIQueries() {
 }
 
 func GetMe(w http.ResponseWriter, r *http.Request) {
-	//log.Fatal("GETME")
 	w.Write([]byte("GetMe"))
 }
+
 func PostMe(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("PostMe"))
 }
@@ -93,10 +95,6 @@ func HeadMe(w http.ResponseWriter, r *http.Request) {
 
 func DeleteMe(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("DeleteMe"))
-}
-
-func QueryMe(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("QueryMe"))
 }
 
 func TestMissingRaml(t *testing.T) {
@@ -129,7 +127,6 @@ func TestValidRamlGetAssignments(t *testing.T) {
 	// HTTP requests to each one.
 	for name := range handlers {
 
-		matcher := regexp.MustCompile("^(Get|Post|Put|Patch|Head|Delete)")
 		match := matcher.FindSubmatch([]byte(name))
 		req, err := http.NewRequest(strings.ToUpper(string(match[0])), "/testapi", nil)
 
