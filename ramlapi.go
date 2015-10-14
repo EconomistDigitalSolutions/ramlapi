@@ -20,7 +20,7 @@ func Build(api *raml.APIDefinition, fun func(data map[string]string)) {
 func Process(file string) (*raml.APIDefinition, error) {
 	routes, err := raml.ParseFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("Failed parsing RAML file: %s\n", err.Error())
+		return nil, fmt.Errorf("Failed parsing RAML file: %s\n", err)
 	}
 
 	return routes, nil
@@ -98,7 +98,7 @@ func processResource(parent, name string, res *raml.Resource, fun func(data map[
 		fun(data)
 	}
 
-	// Get all children.
+	// Process all nested resources.
 	for name, n := range res.Nested {
 		return processResource(path, name, n, fun)
 	}
