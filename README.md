@@ -1,4 +1,4 @@
-This package is designed to work with [RAML](http://raml.org) files and build the appropriate handlers and routing rules in Go projects.
+This package is designed to work with [RAML](http://raml.org) files and build the appropriate handlers and routing rules in Go applications.
 
 [![GoDoc](https://godoc.org/github.com/EconomistDigitalSolutions/ramlapi?status.svg)](https://godoc.org/github.com/EconomistDigitalSolutions/ramlapi)
 
