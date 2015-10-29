@@ -5,7 +5,7 @@ This package is designed to work with [RAML](http://raml.org) files and build th
 The ramlapi codebase contains two packages:
 
 * Ramlapi - used to parse a RAML file and wire it up to a router.
-* Raml-gen - used to parse a RAML file and write a set of HTTP handlers.
+* Ramlgen - used to parse a RAML file and write a set of HTTP handlers.
 
 #### HOW TO RAML-GEN
 
