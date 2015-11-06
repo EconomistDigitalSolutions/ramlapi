@@ -9,14 +9,28 @@ documentation:
 /testapi:
   description: Test API for the ramlapi package.
   get:
-    displayName: GetMe
+    displayName: get test endpoint.
+    queryParameters:
+      country:
+        displayName: country
+        type: string
+        description: User country code
+        example: GB
+        required: true
+        pattern: "{[a-z]{2}}"
+      city:
+        displayName: City
+        type: string
+        description: User city name
+        example: Adelaide
+        required: true
   post:
-    displayName: PostMe
+    displayName: Post test
   put:
-    displayName: PutMe
+    displayName: Put test
   patch:
-    displayName: PatchMe
+    displayName: Patch test
   head:
-    displayName: HeadMe
+    displayName: Head test
   delete:
-    displayName: DeleteMe
+    displayName: Delete test

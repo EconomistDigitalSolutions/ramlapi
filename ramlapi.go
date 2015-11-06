@@ -2,10 +2,60 @@ package ramlapi
 
 import (
 	"fmt"
-	"log"
+	"regexp"
+	"strings"
 
 	"github.com/buddhamagnet/raml"
 )
+
+var reg = regexp.MustCompile("[^A-Za-z0-9]+")
+
+// QueryParameter represents a URL query parameter.
+type QueryParameter struct {
+	Key      string
+	Type     string
+	Pattern  string
+	Required bool
+}
+
+// Endpoint describes an API endpoint.
+type Endpoint struct {
+	Verb            string
+	Handler         string
+	Path            string
+	QueryParameters []*QueryParameter
+}
+
+func (e *Endpoint) setQueryParameters(method *raml.Method) {
+	for _, res := range method.QueryParameters {
+		q := &QueryParameter{
+			Key:      res.Name,
+			Type:     res.Type,
+			Required: res.Required,
+		}
+		if res.Pattern != nil {
+			q.Pattern = *res.Pattern
+		}
+		e.QueryParameters = append(e.QueryParameters, q)
+	}
+}
+
+// EndpointSet is a set of API endpoints.
+type EndpointSet struct {
+	Endpoints []*Endpoint
+}
+
+func (s *EndpointSet) addEndpoint(method *raml.Method) {
+	if method != nil {
+		ep := &Endpoint{
+			Verb:    strings.ToUpper(method.Name),
+			Handler: reg.ReplaceAllString(strings.Title(method.DisplayName), ""),
+		}
+		ep.setQueryParameters(method)
+
+		s.Endpoints = append(s.Endpoints, ep)
+	}
+}
 
 // ProcessRAML processes a RAML file and returns an API definition.
 func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
@@ -21,92 +71,34 @@ func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
 // as an argument that is invoked with the verb, resource path and handler as
 // the resources are processed, so the calling code can use pat, mux, httprouter
 // or whatever router they desire and we don't need to know about it.
-func processResource(parent, name string, resource *raml.Resource, routerFunc func(data map[string]string)) string {
+func processResource(parent, name string, resource *raml.Resource, routerFunc func(s *EndpointSet)) string {
+	var path = parent + name
 
-	var resourcepath = parent + name
-	log.Println("processing", name, "resource")
-	log.Println("path: ", resourcepath)
+	s := &EndpointSet{}
+	s.addEndpoint(resource.Get)
+	s.addEndpoint(resource.Post)
+	s.addEndpoint(resource.Put)
+	s.addEndpoint(resource.Patch)
+	s.addEndpoint(resource.Head)
+	s.addEndpoint(resource.Delete)
 
-	for verb, details := range ResourceVerbs(resource) {
-		log.Println("--- " + verb)
-		data := map[string]string{
-			"verb":    verb,
-			"path":    resourcepath,
-			"handler": details["handler"],
-		}
-		if details["query"] != "" {
-			data["query"] = details["query"]
-			data["query_type"] = details["query_type"]
-			data["query_description"] = details["query_description"]
-			data["query_example"] = details["query_example"]
-			data["query_pattern"] = details["query_pattern"]
-		}
-		routerFunc(data)
+	for _, ep := range s.Endpoints {
+		ep.Path = path
+		routerFunc(s)
 	}
 
 	// Get all children.
 	for nestname, nested := range resource.Nested {
-		return processResource(resourcepath, nestname, nested, routerFunc)
+		return processResource(path, nestname, nested, routerFunc)
 	}
-	return resourcepath
+
+	return path
 }
 
 // Build takes a RAML API definition, a router and a routing map,
 // and wires them all together.
-func Build(api *raml.APIDefinition, routerFunc func(data map[string]string)) {
+func Build(api *raml.APIDefinition, routerFunc func(s *EndpointSet)) {
 	for name, resource := range api.Resources {
 		processResource("", name, &resource, routerFunc)
 	}
-}
-
-// ResourceVerbs assembles resource method types into a
-// map of verbs to handler names.
-func ResourceVerbs(resource *raml.Resource) map[string]map[string]string {
-	var verbs = make(map[string]map[string]string)
-
-	if resource.Get != nil {
-		verbs["GET"] = map[string]string{
-			"handler": resource.Get.DisplayName,
-		}
-		if len(resource.Get.QueryParameters) >= 1 {
-			for _, value := range resource.Get.QueryParameters {
-				verbs["GET"]["query"] = value.DisplayName
-				verbs["GET"]["query_type"] = value.Type
-				verbs["GET"]["query_description"] = value.Description
-				verbs["GET"]["query_example"] = value.Example
-				if value.Pattern == nil {
-					verbs["GET"]["query_pattern"] = ""
-				} else {
-					verbs["GET"]["query_pattern"] = *value.Pattern
-				}
-			}
-		}
-	}
-	if resource.Post != nil {
-		verbs["POST"] = map[string]string{
-			"handler": resource.Post.DisplayName,
-		}
-	}
-	if resource.Put != nil {
-		verbs["PUT"] = map[string]string{
-			"handler": resource.Put.DisplayName,
-		}
-	}
-	if resource.Patch != nil {
-		verbs["PATCH"] = map[string]string{
-			"handler": resource.Patch.DisplayName,
-		}
-	}
-	if resource.Head != nil {
-		verbs["HEAD"] = map[string]string{
-			"handler": resource.Head.DisplayName,
-		}
-	}
-	if resource.Delete != nil {
-		verbs["DELETE"] = map[string]string{
-			"handler": resource.Delete.DisplayName,
-		}
-	}
-
-	return verbs
 }

@@ -1,153 +1,59 @@
 package ramlapi
 
 import (
-	"log"
-	"net/http"
-	"net/http/httptest"
-	"regexp"
-	"strings"
 	"testing"
 )
-
-var routeMap map[string]http.HandlerFunc
-
-var handlers = map[string]http.HandlerFunc{
-	"GetMe":    GetMe,
-	"PostMe":   PostMe,
-	"PutMe":    PutMe,
-	"PatchMe":  PatchMe,
-	"HeadMe":   HeadMe,
-	"DeleteMe": DeleteMe,
-}
 
 var router RouterMock
 
 type RouterMock struct {
-	routes [][]string
+	Set *EndpointSet
 }
 
-func (router *RouterMock) Consume(data map[string]string) {
-	router.routes = append(router.routes, []string{
-		data["path"],
-		data["verb"],
-		data["handler"],
-	})
+func (r *RouterMock) Consume(s *EndpointSet) {
+	r.Set = s
 }
 
-func (router *RouterMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.String()
-	log.Printf("PATH: %s\n", path)
-	log.Printf("REQUEST METHOD: %s\n", r.Method)
-	for _, endpoint := range router.routes {
-		if router.Registered(path, endpoint) && router.Registered(r.Method, endpoint) {
-			handler := handlers[endpoint[2]]
-			handler(w, r)
-		}
-	}
+func routerFunc(s *EndpointSet) {
+	router.Consume(s)
 }
 
-func (router *RouterMock) Registered(a string, route []string) bool {
-	for _, b := range route {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
-func routerFunc(data map[string]string) {
-	router.Consume(data)
-}
-
-func buildAPI() {
+func TestAPI(t *testing.T) {
+	// TODO: consider fixtrue data as a bunch of structs
 	api, _ := ProcessRAML("fixtures/valid.raml")
 	Build(api, routerFunc)
-}
 
-func buildAPIQueries() {
-	api, _ := ProcessRAML("fixtures/queries.raml")
-	Build(api, routerFunc)
-}
-
-func GetMe(w http.ResponseWriter, r *http.Request) {
-	//log.Fatal("GETME")
-	w.Write([]byte("GetMe"))
-}
-func PostMe(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("PostMe"))
-}
-
-func PutMe(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("PutMe"))
-}
-
-func PatchMe(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("PatchMe"))
-}
-
-func HeadMe(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("HeadMe"))
-}
-
-func DeleteMe(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("DeleteMe"))
-}
-
-func QueryMe(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("QueryMe"))
-}
-
-func TestMissingRaml(t *testing.T) {
-	_, err := ProcessRAML("fixtures/missing.raml")
-	if err == nil {
-		t.Fatal("Expected error with missing RAML file")
+	count := len(router.Set.Endpoints)
+	if count != 6 {
+		t.Errorf("expected 6 endpoints, got %d", count)
 	}
-}
 
-func TestInvalidRaml(t *testing.T) {
-	_, err := ProcessRAML("fixtures/invalid.raml")
-	if err == nil {
-		t.Fatal("Expected error with invalid RAML file")
+	if router.Set.Endpoints[0].Handler != "GetTestEndpoint" {
+		t.Errorf(`expected handler name "GetTestEndpoint", got "%s"`, router.Set.Endpoints[0].Handler)
 	}
-}
 
-func TestValidRaml(t *testing.T) {
-	_, err := ProcessRAML("fixtures/valid.raml")
-	if err != nil {
-		t.Fatalf("Expected good response with valid RAML file, got %v\n", err)
+	path := router.Set.Endpoints[0].Path
+	if path != "/testapi" {
+		t.Errorf(`expected "/testapi", got "%s"`, path)
 	}
-}
 
-func TestValidRamlGetAssignments(t *testing.T) {
-	router = RouterMock{}
-	// Build the API and assign handlers.
-	buildAPI()
+	verb := router.Set.Endpoints[0].Verb
+	if verb != "GET" {
+		// TODO: add Method.Name to raml package so this test doesn't fail
+		t.Errorf(`expected "GET", got "%s"`, verb)
+	}
 
-	// Cycle through the map and dispatch the appropriate
-	// HTTP requests to each one.
-	for name := range handlers {
+	queries := router.Set.Endpoints[0].QueryParameters
+	if len(queries) != 2 {
+		t.Errorf("expected 1 query string parameter, got %d", len(queries))
+	}
 
-		matcher := regexp.MustCompile("^(Get|Post|Put|Patch|Head|Delete)")
-		match := matcher.FindSubmatch([]byte(name))
-		req, err := http.NewRequest(strings.ToUpper(string(match[0])), "/testapi", nil)
+	if !queries[1].Required {
+		t.Error("expected query to be required")
+	}
 
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		res := httptest.NewRecorder()
-		// We need to send this to the mux to ensure we are testing the
-		// router interface i.e. the handlers have been assigned when the
-		// API was built.
-		router.ServeHTTP(res, req)
-
-		// Now make sure every handler returns with a 200 OK and the
-		// correct response body.
-		if res.Code != 200 {
-			t.Fatalf("Expected a 200 response from %s, got %d\n", name, res.Code)
-		}
-		if res.Body.String() != name {
-			t.Fatalf("Expected to get %s response from %s, got %s\n", name, name, res.Body.String())
-		}
+	if queries[0].Key != "country" {
+		// TODO: add NamedParameter.Name to raml package so this test doesn't fail
+		t.Errorf(`expected paramater key to be "country", got "%s"`, queries[0].Key)
 	}
 }
