@@ -535,8 +535,8 @@ type Method struct {
 
 	// Briefly describes what the method does to the resource
 	Description string
- 
-        DisplayName string `yaml:"displayName"`
+
+	DisplayName string `yaml:"displayName"`
 
 	// Applying a securityScheme definition to a method overrides whichever
 	// securityScheme has been defined at the root level. To indicate that
@@ -680,6 +680,29 @@ type Resource struct {
 	Nested map[string]*Resource `yaml:",regexp:/.*"`
 }
 
+func (r *Resource) Methods() map[string]*Method {
+	methods := make(map[string]*Method)
+	if r.Get != nil {
+		methods["GET"] = r.Get
+	}
+	if r.Post != nil {
+		methods["POST"] = r.Post
+	}
+	if r.Put != nil {
+		methods["PUT"] = r.Put
+	}
+	if r.Patch != nil {
+		methods["PATCH"] = r.Patch
+	}
+	if r.Head != nil {
+		methods["HEAD"] = r.Head
+	}
+	if r.Delete != nil {
+		methods["DELETE"] = r.Delete
+	}
+	return methods
+}
+
 // TODO: Resource.GetBaseURIParameter --> includeds APIDefinition BURIParams..
 // TODO: Resource.GetAbsoluteURI
 
@@ -704,7 +727,7 @@ type APIDefinition struct {
 	// base URI parameters are available for replacement:
 	//
 	// version - The content of the version field.
-	BaseUri string `yaml:"baseUri"`
+	BaseUri string
 	// TODO: If a URI template variable in the base URI is not explicitly
 	// described in a baseUriParameters property, and is not specified in a
 	// resource-level baseUriParameters property, it MUST still be treated as

@@ -79,12 +79,9 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 	var path = parent + name
 
 	s := new(EndpointSet)
-	s.addEndpoint("GET", resource.Get)
-	s.addEndpoint("POST", resource.Post)
-	s.addEndpoint("PUT", resource.Put)
-	s.addEndpoint("PATCH", resource.Patch)
-	s.addEndpoint("HEAD", resource.Head)
-	s.addEndpoint("DELETE", resource.Delete)
+	for verb, details := range resource.Methods() {
+		s.addEndpoint(verb, details)
+	}
 
 	for _, ep := range s.Endpoints {
 		ep.Path = path
