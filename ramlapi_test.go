@@ -1,49 +1,42 @@
-package ramlapi
+package ramlapi_test
 
 import (
 	"testing"
+
+	. "github.com/EconomistDigitalSolutions/ramlapi"
 )
 
-var router RouterMock
+var endpoints []*Endpoint
 
-type RouterMock struct {
-	Set *EndpointSet
-}
-
-func (r *RouterMock) Consume(s *EndpointSet) {
-	r.Set = s
-}
-
-func routerFunc(s *EndpointSet) {
-	router.Consume(s)
+func testFunc(ep *Endpoint) {
+	endpoints = append(endpoints, ep)
 }
 
 func TestAPI(t *testing.T) {
-	// TODO: consider fixtrue data as a bunch of structs
 	api, _ := ProcessRAML("fixtures/valid.raml")
-	Build(api, routerFunc)
+	Build(api, testFunc)
 
-	count := len(router.Set.Endpoints)
+	count := len(endpoints)
 	if count != 6 {
 		t.Errorf("expected 6 endpoints, got %d", count)
 	}
 
-	if router.Set.Endpoints[0].Handler != "GetTestEndpoint" {
-		t.Errorf(`expected handler name "GetTestEndpoint", got "%s"`, router.Set.Endpoints[0].Handler)
+	if endpoints[0].Handler != "Get" {
+		t.Errorf(`expected handler name "Get", got "%s"`, endpoints[0].Handler)
 	}
 
-	path := router.Set.Endpoints[0].Path
+	path := endpoints[0].Path
 	if path != "/testapi" {
 		t.Errorf(`expected "/testapi", got "%s"`, path)
 	}
 
-	verb := router.Set.Endpoints[0].Verb
+	verb := endpoints[0].Verb
 	if verb != "GET" {
 		// TODO: add Method.Name to raml package so this test doesn't fail
 		t.Errorf(`expected "GET", got "%s"`, verb)
 	}
 
-	queries := router.Set.Endpoints[0].QueryParameters
+	queries := endpoints[0].QueryParameters
 	if len(queries) != 2 {
 		t.Errorf("expected 1 query string parameter, got %d", len(queries))
 	}
