@@ -1,6 +1,7 @@
 package ramlapi
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -8,7 +9,11 @@ import (
 	"github.com/buddhamagnet/raml"
 )
 
-var reg = regexp.MustCompile("[^A-Za-z0-9]+")
+var vizer = regexp.MustCompile("[^A-Za-z0-9]+")
+
+func variableize(s string) string {
+	return vizer.ReplaceAllString(strings.Title(s), "")
+}
 
 // QueryParameter represents a URL query parameter.
 type QueryParameter struct {
@@ -44,21 +49,22 @@ func (e *Endpoint) setQueryParameters(method *raml.Method) {
 	}
 }
 
-// EndpointSet is a set of API endpoints.
-type EndpointSet struct {
-	Endpoints []*Endpoint
-}
+func appendEndpoint(s []*Endpoint, verb string, method *raml.Method) ([]*Endpoint, error) {
+	if method.DisplayName == "" {
+		return s, errors.New(`"DisplayName" property not set in RAML method`)
+	}
 
-func (s *EndpointSet) addEndpoint(verb string, method *raml.Method) {
 	if method != nil {
 		ep := &Endpoint{
 			Verb:    verb,
-			Handler: reg.ReplaceAllString(strings.Title(method.DisplayName), ""),
+			Handler: variableize(method.DisplayName),
 		}
 		ep.setQueryParameters(method)
 
-		s.Endpoints = append(s.Endpoints, ep)
+		s = append(s, ep)
 	}
+
+	return s, nil
 }
 
 // ProcessRAML processes a RAML file and returns an API definition.
@@ -75,15 +81,19 @@ func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
 // as an argument that is invoked with the verb, resource path and handler as
 // the resources are processed, so the calling code can use pat, mux, httprouter
 // or whatever router they desire and we don't need to know about it.
-func processResource(parent, name string, resource *raml.Resource, routerFunc func(s *Endpoint)) string {
+func processResource(parent, name string, resource *raml.Resource, routerFunc func(s *Endpoint)) error {
 	var path = parent + name
+	var err error
 
-	s := new(EndpointSet)
+	s := make([]*Endpoint, 0, 6)
 	for verb, details := range resource.Methods() {
-		s.addEndpoint(verb, details)
+		s, err = appendEndpoint(s, verb, details)
+		if err != nil {
+			return err
+		}
 	}
 
-	for _, ep := range s.Endpoints {
+	for _, ep := range s {
 		ep.Path = path
 		routerFunc(ep)
 	}
@@ -93,13 +103,18 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 		return processResource(path, nestname, nested, routerFunc)
 	}
 
-	return path
+	return nil
 }
 
 // Build takes a RAML API definition, a router and a routing map,
 // and wires them all together.
-func Build(api *raml.APIDefinition, routerFunc func(s *Endpoint)) {
+func Build(api *raml.APIDefinition, routerFunc func(s *Endpoint)) error {
 	for name, resource := range api.Resources {
-		processResource("", name, &resource, routerFunc)
+		err := processResource("", name, &resource, routerFunc)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
