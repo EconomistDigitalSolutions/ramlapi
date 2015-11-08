@@ -4,7 +4,7 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/buddhamagnet/raml",
-			"Rev": "685a1e38a80e22bc6c9f213b7c0b8e2aa30f7ae6"
+			"Rev": "93933e1e762e56d6243e1c639b6f7dc1c64bf2bd"
 		},
 		{
 			"ImportPath": "github.com/buddhamagnet/yaml",
