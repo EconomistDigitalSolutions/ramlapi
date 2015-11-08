@@ -26,6 +26,10 @@ type Endpoint struct {
 	QueryParameters []*QueryParameter
 }
 
+func (e *Endpoint) String() string {
+	return fmt.Sprintf("verb: %s handler: %s path:%s\n", e.Verb, e.Handler, e.Path)
+}
+
 func (e *Endpoint) setQueryParameters(method *raml.Method) {
 	for _, res := range method.QueryParameters {
 		q := &QueryParameter{
@@ -45,10 +49,10 @@ type EndpointSet struct {
 	Endpoints []*Endpoint
 }
 
-func (s *EndpointSet) addEndpoint(method *raml.Method) {
+func (s *EndpointSet) addEndpoint(verb string, method *raml.Method) {
 	if method != nil {
 		ep := &Endpoint{
-			Verb:    strings.ToUpper(method.Name),
+			Verb:    verb,
 			Handler: reg.ReplaceAllString(strings.Title(method.DisplayName), ""),
 		}
 		ep.setQueryParameters(method)
@@ -71,20 +75,20 @@ func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
 // as an argument that is invoked with the verb, resource path and handler as
 // the resources are processed, so the calling code can use pat, mux, httprouter
 // or whatever router they desire and we don't need to know about it.
-func processResource(parent, name string, resource *raml.Resource, routerFunc func(s *EndpointSet)) string {
+func processResource(parent, name string, resource *raml.Resource, routerFunc func(s *Endpoint)) string {
 	var path = parent + name
 
-	s := &EndpointSet{}
-	s.addEndpoint(resource.Get)
-	s.addEndpoint(resource.Post)
-	s.addEndpoint(resource.Put)
-	s.addEndpoint(resource.Patch)
-	s.addEndpoint(resource.Head)
-	s.addEndpoint(resource.Delete)
+	s := new(EndpointSet)
+	s.addEndpoint("GET", resource.Get)
+	s.addEndpoint("POST", resource.Post)
+	s.addEndpoint("PUT", resource.Put)
+	s.addEndpoint("PATCH", resource.Patch)
+	s.addEndpoint("HEAD", resource.Head)
+	s.addEndpoint("DELETE", resource.Delete)
 
 	for _, ep := range s.Endpoints {
 		ep.Path = path
-		routerFunc(s)
+		routerFunc(ep)
 	}
 
 	// Get all children.
@@ -97,7 +101,7 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 
 // Build takes a RAML API definition, a router and a routing map,
 // and wires them all together.
-func Build(api *raml.APIDefinition, routerFunc func(s *EndpointSet)) {
+func Build(api *raml.APIDefinition, routerFunc func(s *Endpoint)) {
 	for name, resource := range api.Resources {
 		processResource("", name, &resource, routerFunc)
 	}
