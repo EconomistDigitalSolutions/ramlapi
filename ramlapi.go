@@ -11,10 +11,6 @@ import (
 
 var vizer = regexp.MustCompile("[^A-Za-z0-9]+")
 
-func variableize(s string) string {
-	return vizer.ReplaceAllString(strings.Title(s), "")
-}
-
 // QueryParameter represents a URL query parameter.
 type QueryParameter struct {
 	Key      string
@@ -31,6 +27,7 @@ type Endpoint struct {
 	QueryParameters []*QueryParameter
 }
 
+// String returns the string representation of an Endpoint.
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("verb: %s handler: %s path:%s\n", e.Verb, e.Handler, e.Path)
 }
@@ -49,6 +46,28 @@ func (e *Endpoint) setQueryParameters(method *raml.Method) {
 	}
 }
 
+// ProcessRAML processes a RAML file and returns an API definition.
+func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
+	routes, err := raml.ParseFile(ramlFile)
+	if err != nil {
+		return nil, fmt.Errorf("Failed parsing RAML file: %s\n", err.Error())
+	}
+	return routes, nil
+}
+
+// Build takes a RAML API definition, a router and a routing map,
+// and wires them all together.
+func Build(api *raml.APIDefinition, routerFunc func(s *Endpoint)) error {
+	for name, resource := range api.Resources {
+		err := processResource("", name, &resource, routerFunc)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func appendEndpoint(s []*Endpoint, verb string, method *raml.Method) ([]*Endpoint, error) {
 	if method.DisplayName == "" {
 		return s, errors.New(`"DisplayName" property not set in RAML method`)
@@ -65,15 +84,6 @@ func appendEndpoint(s []*Endpoint, verb string, method *raml.Method) ([]*Endpoin
 	}
 
 	return s, nil
-}
-
-// ProcessRAML processes a RAML file and returns an API definition.
-func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
-	routes, err := raml.ParseFile(ramlFile)
-	if err != nil {
-		return nil, fmt.Errorf("Failed parsing RAML file: %s\n", err.Error())
-	}
-	return routes, nil
 }
 
 // processResource recursively process resources and their nested children
@@ -106,15 +116,6 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 	return nil
 }
 
-// Build takes a RAML API definition, a router and a routing map,
-// and wires them all together.
-func Build(api *raml.APIDefinition, routerFunc func(s *Endpoint)) error {
-	for name, resource := range api.Resources {
-		err := processResource("", name, &resource, routerFunc)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+func variableize(s string) string {
+	return vizer.ReplaceAllString(strings.Title(s), "")
 }
