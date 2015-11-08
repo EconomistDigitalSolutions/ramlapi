@@ -21,8 +21,11 @@ func TestAPI(t *testing.T) {
 		t.Errorf("expected 6 endpoints, got %d", count)
 	}
 
-	if endpoints[0].Handler != "Get" {
-		t.Errorf(`expected handler name "Get", got "%s"`, endpoints[0].Handler)
+	expectedHandlers := []string{"Get", "Put", "Post", "Patch", "Delete", "Head"}
+	for _, h := range expectedHandlers {
+		if handlerNotFound(h, endpoints) {
+			t.Errorf(`expected handler name "%s", not found`, h)
+		}
 	}
 
 	path := endpoints[0].Path
@@ -30,13 +33,15 @@ func TestAPI(t *testing.T) {
 		t.Errorf(`expected "/testapi", got "%s"`, path)
 	}
 
-	verb := endpoints[0].Verb
-	if verb != "GET" {
-		// TODO: add Method.Name to raml package so this test doesn't fail
-		t.Errorf(`expected "GET", got "%s"`, verb)
+	expectedVerbs := []string{"GET", "PUT", "POST", "PATCH", "DELETE", "HEAD"}
+	for _, v := range expectedVerbs {
+		if verbNotFound(v, endpoints) {
+			t.Errorf(`expected verb "%s", not found`, v)
+		}
 	}
 
-	queries := endpoints[0].QueryParameters
+	get := findGetEndpoint(endpoints)
+	queries := get.QueryParameters
 	if len(queries) != 2 {
 		t.Errorf("expected 1 query string parameter, got %d", len(queries))
 	}
@@ -49,4 +54,34 @@ func TestAPI(t *testing.T) {
 		// TODO: add NamedParameter.Name to raml package so this test doesn't fail
 		t.Errorf(`expected paramater key to be "country", got "%s"`, queries[0].Key)
 	}
+}
+
+func handlerNotFound(handler string, eps []*Endpoint) bool {
+	for _, ep := range eps {
+		if ep.Handler == handler {
+			return false
+		}
+	}
+
+	return true
+}
+
+func verbNotFound(verb string, eps []*Endpoint) bool {
+	for _, ep := range eps {
+		if ep.Verb == verb {
+			return false
+		}
+	}
+
+	return true
+}
+
+func findGetEndpoint(eps []*Endpoint) *Endpoint {
+	for _, ep := range eps {
+		if ep.Verb == "GET" {
+			return ep
+		}
+	}
+
+	return nil
 }
