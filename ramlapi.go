@@ -73,14 +73,14 @@ func Build(api *raml.APIDefinition, routerFunc func(s *Endpoint)) error {
 	return nil
 }
 
-func appendEndpoint(s []*Endpoint, verb string, method *raml.Method) ([]*Endpoint, error) {
+func appendEndpoint(s []*Endpoint, method *raml.Method) ([]*Endpoint, error) {
 	if method.DisplayName == "" {
-		return s, errors.New(`"DisplayName" property not set in RAML method`)
+		return s, errors.New("DisplayName property not set in RAML method")
 	}
 
 	if method != nil {
 		ep := &Endpoint{
-			Verb:        verb,
+			Verb:        method.Name,
 			Handler:     Variableize(method.DisplayName),
 			Description: method.Description,
 		}
@@ -102,8 +102,8 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 	var err error
 
 	s := make([]*Endpoint, 0, 6)
-	for verb, details := range resource.Methods() {
-		s, err = appendEndpoint(s, verb, details)
+	for _, details := range resource.Methods() {
+		s, err = appendEndpoint(s, details)
 		if err != nil {
 			return err
 		}

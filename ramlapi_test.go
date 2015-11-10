@@ -46,13 +46,12 @@ func TestAPI(t *testing.T) {
 		t.Errorf("expected 1 query string parameter, got %d", len(queries))
 	}
 
-	if !queries[1].Required {
-		t.Error("expected query to be required")
-	}
-
-	if queries[0].Key != "country" {
-		// TODO: add NamedParameter.Name to raml package so this test doesn't fail
-		t.Errorf(`expected paramater key to be "country", got "%s"`, queries[0].Key)
+	// query map {key: required}
+	expectedQueries := map[string]bool{"Country": true, "City": false}
+	for key, req := range expectedQueries {
+		if queryNotFound(key, req, queries) {
+			t.Errorf("expected parameter: %s, required: %t, none found", key, req)
+		}
 	}
 }
 
@@ -69,6 +68,16 @@ func handlerNotFound(handler string, eps []*Endpoint) bool {
 func verbNotFound(verb string, eps []*Endpoint) bool {
 	for _, ep := range eps {
 		if ep.Verb == verb {
+			return false
+		}
+	}
+
+	return true
+}
+
+func queryNotFound(key string, req bool, qps []*QueryParameter) bool {
+	for _, qp := range qps {
+		if qp.Key == key && qp.Required == req {
 			return false
 		}
 	}

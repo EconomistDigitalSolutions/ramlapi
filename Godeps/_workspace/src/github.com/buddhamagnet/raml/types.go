@@ -679,7 +679,7 @@ type Resource struct {
 }
 
 func (r *Resource) Methods() []*Method {
-	methods := make([]*Method, 1, 6)
+	methods := make([]*Method, 0, 6)
 	if r.Get != nil {
 		methods = append(methods, r.Get)
 	}
