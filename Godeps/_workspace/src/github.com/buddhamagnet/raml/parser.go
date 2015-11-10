@@ -116,8 +116,41 @@ func ParseFile(filePath string) (*APIDefinition, error) {
 		return nil, ramlError
 	}
 
+	postProcess(apiDefinition)
+
 	// Good.
 	return apiDefinition, nil
+}
+
+func postProcess(d *APIDefinition) {
+	for _, r := range d.Resources {
+		addMethodNames(&r)
+	}
+}
+
+func addMethodNames(r *Resource) {
+	if r.Get != nil {
+		r.Get.Name = "GET"
+	}
+	if r.Post != nil {
+		r.Post.Name = "POST"
+	}
+	if r.Put != nil {
+		r.Put.Name = "PUT"
+	}
+	if r.Patch != nil {
+		r.Patch.Name = "PATCH"
+	}
+	if r.Head != nil {
+		r.Head.Name = "HEAD"
+	}
+	if r.Delete != nil {
+		r.Delete.Name = "DELETE"
+	}
+
+	for _, n := range r.Nested {
+		addMethodNames(n)
+	}
 }
 
 // Reads the contents of a file, returns a bytes buffer
