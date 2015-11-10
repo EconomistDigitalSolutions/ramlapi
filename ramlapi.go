@@ -9,7 +9,11 @@ import (
 	"github.com/buddhamagnet/raml"
 )
 
-var vizer = regexp.MustCompile("[^A-Za-z0-9]+")
+var vizer *regexp.Regexp
+
+func init() {
+	vizer = regexp.MustCompile("[^A-Za-z0-9]+")
+}
 
 // QueryParameter represents a URL query parameter.
 type QueryParameter struct {
@@ -24,6 +28,7 @@ type Endpoint struct {
 	Verb            string
 	Handler         string
 	Path            string
+	Description     string
 	QueryParameters []*QueryParameter
 }
 
@@ -46,9 +51,9 @@ func (e *Endpoint) setQueryParameters(method *raml.Method) {
 	}
 }
 
-// ProcessRAML processes a RAML file and returns an API definition.
-func ProcessRAML(ramlFile string) (*raml.APIDefinition, error) {
-	routes, err := raml.ParseFile(ramlFile)
+// Process processes a RAML file and returns an API definition.
+func Process(file string) (*raml.APIDefinition, error) {
+	routes, err := raml.ParseFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("Failed parsing RAML file: %s\n", err.Error())
 	}
@@ -75,8 +80,9 @@ func appendEndpoint(s []*Endpoint, verb string, method *raml.Method) ([]*Endpoin
 
 	if method != nil {
 		ep := &Endpoint{
-			Verb:    verb,
-			Handler: variableize(method.DisplayName),
+			Verb:        verb,
+			Handler:     variableize(method.DisplayName),
+			Description: method.Description,
 		}
 		ep.setQueryParameters(method)
 

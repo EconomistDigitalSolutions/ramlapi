@@ -13,7 +13,7 @@ func testFunc(ep *Endpoint) {
 }
 
 func TestAPI(t *testing.T) {
-	api, _ := ProcessRAML("fixtures/valid.raml")
+	api, _ := Process("fixtures/valid.raml")
 	Build(api, testFunc)
 
 	count := len(endpoints)
