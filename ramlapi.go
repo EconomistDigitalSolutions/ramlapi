@@ -81,7 +81,7 @@ func appendEndpoint(s []*Endpoint, verb string, method *raml.Method) ([]*Endpoin
 	if method != nil {
 		ep := &Endpoint{
 			Verb:        verb,
-			Handler:     variableize(method.DisplayName),
+			Handler:     Variableize(method.DisplayName),
 			Description: method.Description,
 		}
 		ep.setQueryParameters(method)
@@ -122,6 +122,6 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 	return nil
 }
 
-func variableize(s string) string {
+func Variableize(s string) string {
 	return vizer.ReplaceAllString(strings.Title(s), "")
 }
