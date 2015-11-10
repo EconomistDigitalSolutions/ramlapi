@@ -16,6 +16,14 @@ var (
 	genFile  string
 )
 
+type RouteMapEntry struct {
+	Name, Struct string
+}
+
+type HandlerInfo struct {
+	Name, Verb, Path, Doc string
+}
+
 func init() {
 	flag.StringVar(&ramlFile, "ramlfile", "api.raml", "RAML file to parse")
 	flag.StringVar(&genFile, "genfile", "handlers_gen.go", "Filename to use for output")
@@ -70,10 +78,7 @@ func format(f *os.File) {
 // generateResource creates a handler struct from an API resource
 // and executes the associated template.
 func generateResource(parent, name string, resource *raml.Resource, t *template.Template, f *os.File) string {
-	var path = parent + name
-	type HandlerInfo struct {
-		Name, Verb, Path, Doc string
-	}
+	path := parent + name
 
 	for verb, data := range resource.Methods() {
 		err := t.Execute(f, HandlerInfo{ramlapi.Variableize(data.DisplayName), verb, path, data.Description})
@@ -93,10 +98,7 @@ func generateResource(parent, name string, resource *raml.Resource, t *template.
 // used by the calling code to link the display name strings that come
 // from the RAML file to handler funcs in the client code.
 func generateMap(parent, name string, resource *raml.Resource, e *template.Template, f *os.File) {
-	var path = parent + name
-	type RouteMapEntry struct {
-		Name, Struct string
-	}
+	path := parent + name
 
 	for _, data := range resource.Methods() {
 		name := ramlapi.Variableize(data.DisplayName)
