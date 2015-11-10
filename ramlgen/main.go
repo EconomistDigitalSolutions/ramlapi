@@ -82,8 +82,8 @@ func format(f *os.File) {
 func generateResource(parent, name string, resource *raml.Resource, t *template.Template, f *os.File) string {
 	path := parent + name
 
-	for verb, data := range resource.Methods() {
-		err := t.Execute(f, HandlerInfo{ramlapi.Variableize(data.DisplayName), verb, path, data.Description})
+	for _, method := range resource.Methods() {
+		err := t.Execute(f, HandlerInfo{ramlapi.Variableize(method.DisplayName), method.Name, path, method.Description})
 		if err != nil {
 			log.Println("executing template:", err)
 		}
