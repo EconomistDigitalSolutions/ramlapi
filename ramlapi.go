@@ -122,6 +122,7 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 	return nil
 }
 
+// Variableize normalises RAML display names.
 func Variableize(s string) string {
 	return vizer.ReplaceAllString(strings.Title(s), "")
 }
