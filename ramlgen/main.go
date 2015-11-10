@@ -76,7 +76,7 @@ func generateResource(parent, name string, resource *raml.Resource, t *template.
 	}
 
 	for verb, data := range resource.Methods() {
-		err := t.Execute(f, HandlerInfo{data.DisplayName, verb, path, data.Description})
+		err := t.Execute(f, HandlerInfo{ramlapi.Variableize(data.DisplayName), verb, path, data.Description})
 		if err != nil {
 			log.Println("executing template:", err)
 		}
@@ -99,7 +99,8 @@ func generateMap(parent, name string, resource *raml.Resource, e *template.Templ
 	}
 
 	for _, data := range resource.Methods() {
-		err := e.Execute(f, RouteMapEntry{data.DisplayName, data.DisplayName})
+		name := ramlapi.Variableize(data.DisplayName)
+		err := e.Execute(f, RouteMapEntry{name, name})
 		if err != nil {
 			log.Println("executing template:", err)
 		}
