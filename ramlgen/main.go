@@ -16,10 +16,12 @@ var (
 	genFile  string
 )
 
+// RouteMapEntry represents an entry in a route map.
 type RouteMapEntry struct {
 	Name, Struct string
 }
 
+// HandlerInfo contains handler information.
 type HandlerInfo struct {
 	Name, Verb, Path, Doc string
 }
