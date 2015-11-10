@@ -70,16 +70,13 @@ func format(f *os.File) {
 // generateResource creates a handler struct from an API resource
 // and executes the associated template.
 func generateResource(parent, name string, resource *raml.Resource, t *template.Template, f *os.File) string {
-	var resourcepath = parent + name
+	var path = parent + name
 	type HandlerInfo struct {
 		Name, Verb, Path, Doc string
 	}
 
-	for verb, n := range ramlapi.ResourceVerbs(resource) {
-		if len(n) == 0 {
-			log.Fatalf("no handler name specified for %s via %s\n", resourcepath, verb)
-		}
-		err := t.Execute(f, HandlerInfo{n["handler"], verb, resourcepath, resource.Description})
+	for verb, data := range resource.Methods() {
+		err := t.Execute(f, HandlerInfo{data.DisplayName, verb, path, data.Description})
 		if err != nil {
 			log.Println("executing template:", err)
 		}
@@ -87,25 +84,22 @@ func generateResource(parent, name string, resource *raml.Resource, t *template.
 
 	// Get all children.
 	for nestname, nested := range resource.Nested {
-		return generateResource(resourcepath, nestname, nested, t, f)
+		return generateResource(path, nestname, nested, t, f)
 	}
-	return resourcepath
+	return path
 }
 
 // generateMap builds a map of string labels to handler funcs - this is
 // used by the calling code to link the display name strings that come
 // from the RAML file to handler funcs in the client code.
 func generateMap(parent, name string, resource *raml.Resource, e *template.Template, f *os.File) {
-	var resourcepath = parent + name
+	var path = parent + name
 	type RouteMapEntry struct {
 		Name, Struct string
 	}
 
-	for verb, n := range ramlapi.ResourceVerbs(resource) {
-		if len(n) == 0 {
-			log.Fatalf("no handler name specified for %s via %s\n", resourcepath, verb)
-		}
-		err := e.Execute(f, RouteMapEntry{n["handler"], n["handler"]})
+	for _, data := range resource.Methods() {
+		err := e.Execute(f, RouteMapEntry{data.DisplayName, data.DisplayName})
 		if err != nil {
 			log.Println("executing template:", err)
 		}
@@ -113,6 +107,6 @@ func generateMap(parent, name string, resource *raml.Resource, e *template.Templ
 
 	// Get all children.
 	for nestname, nested := range resource.Nested {
-		generateMap(resourcepath, nestname, nested, e, f)
+		generateMap(path, nestname, nested, e, f)
 	}
 }
