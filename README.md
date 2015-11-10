@@ -28,16 +28,25 @@ in the RAML file. The router can then hook the data up however it likes.
 
 ```go
 router = mux.NewRouter().StrictSlash(true)
-api, err := ramlapi.ProcessRAML(f)
+api, err := ramlapi.Process(f)
     if err != nil {
 		log.Fatal(err)
 	}
 ramlapi.Build(api, routerFunc)
 }
 
-func routerFunc(map [string]string) {
-	router.
-		Methods(data["verb"]).
-		Path(data["path"]).
-		Handler(RouteMap[data["handler"]])
-}
+route := router.
+		Methods(ep.Verb).
+		Path(ep.Path).
+		Handler(RouteMap[ep.Handler])
+
+	if len(ep.QueryParameters) != 0 {
+		for _, query := range ep.QueryParameters {
+			if query.Pattern != "" {
+				route.Queries(query.Key, fmt.Sprintf("{%s:%s}", query.Key, query.Pattern))
+			} else {
+				route.Queries(query.Key, "")
+			}
+		}
+	}
+```
