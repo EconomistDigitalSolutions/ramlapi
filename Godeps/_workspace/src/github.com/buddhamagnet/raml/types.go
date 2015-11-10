@@ -366,7 +366,6 @@ type Trait struct {
 // doesn't contain Usage, optional fields etc.
 type ResourceTypeMethod struct {
 	Name string
-	// TODO: Fill this during the post-processing phase
 
 	// Briefly describes what the method does to the resource
 	Description string
@@ -531,7 +530,6 @@ type SecurityScheme struct {
 // Methods are operations that are performed on a resource
 type Method struct {
 	Name string
-	// TODO: Fill this during the post-processing phase
 
 	// Briefly describes what the method does to the resource
 	Description string
@@ -680,26 +678,27 @@ type Resource struct {
 	Nested map[string]*Resource `yaml:",regexp:/.*"`
 }
 
-func (r *Resource) Methods() map[string]*Method {
-	methods := make(map[string]*Method)
+func (r *Resource) Methods() []*Method {
+	methods := make([]*Method, 0, 6)
 	if r.Get != nil {
-		methods["GET"] = r.Get
+		methods = append(methods, r.Get)
 	}
 	if r.Post != nil {
-		methods["POST"] = r.Post
+		methods = append(methods, r.Post)
 	}
 	if r.Put != nil {
-		methods["PUT"] = r.Put
+		methods = append(methods, r.Put)
 	}
 	if r.Patch != nil {
-		methods["PATCH"] = r.Patch
+		methods = append(methods, r.Patch)
 	}
 	if r.Head != nil {
-		methods["HEAD"] = r.Head
+		methods = append(methods, r.Head)
 	}
 	if r.Delete != nil {
-		methods["DELETE"] = r.Delete
+		methods = append(methods, r.Delete)
 	}
+
 	return methods
 }
 

@@ -4,19 +4,11 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/buddhamagnet/raml",
-			"Rev": "93933e1e762e56d6243e1c639b6f7dc1c64bf2bd"
+			"Rev": "396f76ddca3fd297d722114be47112bf2ce8d509"
 		},
 		{
 			"ImportPath": "github.com/buddhamagnet/yaml",
 			"Rev": "e401b2b026855a4fa8e7014d553ae5bdfccb21cd"
-		},
-		{
-			"ImportPath": "github.com/gorilla/context",
-			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
-		},
-		{
-			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "9cb89f07ca03c6a28d1e237ba033bc6a29422fd6"
 		}
 	]
 }
