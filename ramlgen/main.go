@@ -23,7 +23,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	api, err := ramlapi.ProcessRAML(ramlFile)
+	api, err := ramlapi.Process(ramlFile)
 	if err != nil {
 		log.Fatal(err)
 	}
