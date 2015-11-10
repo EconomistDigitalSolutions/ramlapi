@@ -366,7 +366,6 @@ type Trait struct {
 // doesn't contain Usage, optional fields etc.
 type ResourceTypeMethod struct {
 	Name string
-	// TODO: Fill this during the post-processing phase
 
 	// Briefly describes what the method does to the resource
 	Description string
@@ -531,12 +530,11 @@ type SecurityScheme struct {
 // Methods are operations that are performed on a resource
 type Method struct {
 	Name string
-	// TODO: Fill this during the post-processing phase
 
 	// Briefly describes what the method does to the resource
 	Description string
- 
-        DisplayName string `yaml:"displayName"`
+
+	DisplayName string `yaml:"displayName"`
 
 	// Applying a securityScheme definition to a method overrides whichever
 	// securityScheme has been defined at the root level. To indicate that
@@ -680,6 +678,30 @@ type Resource struct {
 	Nested map[string]*Resource `yaml:",regexp:/.*"`
 }
 
+func (r *Resource) Methods() []*Method {
+	methods := make([]*Method, 0, 6)
+	if r.Get != nil {
+		methods = append(methods, r.Get)
+	}
+	if r.Post != nil {
+		methods = append(methods, r.Post)
+	}
+	if r.Put != nil {
+		methods = append(methods, r.Put)
+	}
+	if r.Patch != nil {
+		methods = append(methods, r.Patch)
+	}
+	if r.Head != nil {
+		methods = append(methods, r.Head)
+	}
+	if r.Delete != nil {
+		methods = append(methods, r.Delete)
+	}
+
+	return methods
+}
+
 // TODO: Resource.GetBaseURIParameter --> includeds APIDefinition BURIParams..
 // TODO: Resource.GetAbsoluteURI
 
@@ -704,7 +726,7 @@ type APIDefinition struct {
 	// base URI parameters are available for replacement:
 	//
 	// version - The content of the version field.
-	BaseUri string `yaml:"baseUri"`
+	BaseUri string
 	// TODO: If a URI template variable in the base URI is not explicitly
 	// described in a baseUriParameters property, and is not specified in a
 	// resource-level baseUriParameters property, it MUST still be treated as
