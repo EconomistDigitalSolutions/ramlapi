@@ -38,9 +38,9 @@ func (e *Endpoint) String() string {
 }
 
 func (e *Endpoint) setQueryParameters(method *raml.Method) {
-	for _, res := range method.QueryParameters {
+	for name, res := range method.QueryParameters {
 		q := &QueryParameter{
-			Key:      res.Name,
+			Key:      name,
 			Type:     res.Type,
 			Required: res.Required,
 		}
