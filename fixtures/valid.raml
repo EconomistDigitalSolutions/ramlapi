@@ -6,8 +6,13 @@ baseUri: http://github.com/buddhamagnet/ramlapi
 documentation:
   -  title: Overview
 
-/testapi:
+/testapi/{foo}:
   description: Test API for the ramlapi package.
+  uriParameters:
+    foo:
+      displayName: Foo bar
+      type: string
+      pattern: "[0-9]{5}"
   get:
     displayName: get.
     queryParameters:
@@ -32,3 +37,13 @@ documentation:
     displayName: head
   delete:
     displayName: delete
+  /{bar}:
+    description: Nested example
+    uriParameters:
+      bar:
+        displayName: Foo bar
+        type: string
+        pattern: "[a-z]{5}"
+        required: true
+    get:
+      displayName: Nested get

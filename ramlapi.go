@@ -15,8 +15,8 @@ func init() {
 	vizer = regexp.MustCompile("[^A-Za-z0-9]+")
 }
 
-// QueryParameter represents a URL query parameter.
-type QueryParameter struct {
+// Parameter is a path or query string parameter.
+type Parameter struct {
 	Key      string
 	Type     string
 	Pattern  string
@@ -29,7 +29,8 @@ type Endpoint struct {
 	Handler         string
 	Path            string
 	Description     string
-	QueryParameters []*QueryParameter
+	URIParameters   []*Parameter
+	QueryParameters []*Parameter
 }
 
 // String returns the string representation of an Endpoint.
@@ -38,17 +39,23 @@ func (e *Endpoint) String() string {
 }
 
 func (e *Endpoint) setQueryParameters(method *raml.Method) {
-	for name, res := range method.QueryParameters {
-		q := &QueryParameter{
-			Key:      name,
-			Type:     res.Type,
-			Required: res.Required,
-		}
-		if res.Pattern != nil {
-			q.Pattern = *res.Pattern
-		}
-		e.QueryParameters = append(e.QueryParameters, q)
+	for name, param := range method.QueryParameters {
+		e.QueryParameters = append(e.QueryParameters, newParam(name, &param))
 	}
+}
+
+// Build takes a RAML API definition, a router and a routing map,
+// and wires them all together.
+func Build(api *raml.APIDefinition, routerFunc func(s *Endpoint)) error {
+	for name, resource := range api.Resources {
+		var resourceParams []*Parameter
+		err := processResource("", name, &resource, resourceParams, routerFunc)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Process processes a RAML file and returns an API definition.
@@ -60,20 +67,25 @@ func Process(file string) (*raml.APIDefinition, error) {
 	return routes, nil
 }
 
-// Build takes a RAML API definition, a router and a routing map,
-// and wires them all together.
-func Build(api *raml.APIDefinition, routerFunc func(s *Endpoint)) error {
-	for name, resource := range api.Resources {
-		err := processResource("", name, &resource, routerFunc)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+// Variableize normalises RAML display names.
+func Variableize(s string) string {
+	return vizer.ReplaceAllString(strings.Title(s), "")
 }
 
-func appendEndpoint(s []*Endpoint, method *raml.Method) ([]*Endpoint, error) {
+func newParam(name string, param *raml.NamedParameter) *Parameter {
+	p := &Parameter{
+		Key:      name,
+		Type:     param.Type,
+		Required: param.Required,
+	}
+	if param.Pattern != nil {
+		p.Pattern = *param.Pattern
+	}
+
+	return p
+}
+
+func appendEndpoint(s []*Endpoint, method *raml.Method, params []*Parameter) ([]*Endpoint, error) {
 	if method.DisplayName == "" {
 		return s, errors.New("DisplayName property not set in RAML method")
 	}
@@ -84,8 +96,12 @@ func appendEndpoint(s []*Endpoint, method *raml.Method) ([]*Endpoint, error) {
 			Handler:     Variableize(method.DisplayName),
 			Description: method.Description,
 		}
+		// set query parameters
 		ep.setQueryParameters(method)
-
+		// set uri parameters
+		for _, param := range params {
+			ep.URIParameters = append(ep.URIParameters, param)
+		}
 		s = append(s, ep)
 	}
 
@@ -97,13 +113,16 @@ func appendEndpoint(s []*Endpoint, method *raml.Method) ([]*Endpoint, error) {
 // as an argument that is invoked with the verb, resource path and handler as
 // the resources are processed, so the calling code can use pat, mux, httprouter
 // or whatever router they desire and we don't need to know about it.
-func processResource(parent, name string, resource *raml.Resource, routerFunc func(s *Endpoint)) error {
+func processResource(parent, name string, resource *raml.Resource, params []*Parameter, routerFunc func(s *Endpoint)) error {
 	var path = parent + name
 	var err error
+	for name, param := range resource.UriParameters {
+		params = append(params, newParam(name, &param))
+	}
 
 	s := make([]*Endpoint, 0, 6)
-	for _, details := range resource.Methods() {
-		s, err = appendEndpoint(s, details)
+	for _, m := range resource.Methods() {
+		s, err = appendEndpoint(s, m, params)
 		if err != nil {
 			return err
 		}
@@ -116,13 +135,8 @@ func processResource(parent, name string, resource *raml.Resource, routerFunc fu
 
 	// Get all children.
 	for nestname, nested := range resource.Nested {
-		return processResource(path, nestname, nested, routerFunc)
+		return processResource(path, nestname, nested, params, routerFunc)
 	}
 
 	return nil
-}
-
-// Variableize normalises RAML display names.
-func Variableize(s string) string {
-	return vizer.ReplaceAllString(strings.Title(s), "")
 }
