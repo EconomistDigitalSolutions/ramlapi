@@ -1,124 +1,260 @@
 package ramlapi_test
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/EconomistDigitalSolutions/ramlapi"
+	"github.com/buddhamagnet/raml"
 )
 
-var endpoints []*Endpoint
+var (
+	endpoints []*Endpoint
+	patt1     string
+	patt2     string
+)
+
+func init() {
+	patt1 = "[a-z]"
+	patt2 = "[0-9]"
+}
 
 func testFunc(ep *Endpoint) {
 	endpoints = append(endpoints, ep)
 }
 
-func TestAPI(t *testing.T) {
-	api, _ := Process("fixtures/valid.raml")
-	Build(api, testFunc)
+// TestData used to test raml.APIDefinition to ramlapi.Endpoints. The order
+// of expected methods is important (GET, POST, PUT, PATCH, HEAD, DELETE).
+var TestData = []struct {
+	api      *raml.APIDefinition
+	expected []map[string]interface{}
+}{
+	{
+		// test simple endpoint
+		&raml.APIDefinition{
+			Resources: map[string]raml.Resource{
+				"/test": raml.Resource{
+					Post: &raml.Method{
+						Name:        "POST",
+						DisplayName: "Post me",
+					},
+					Get: &raml.Method{
+						Name:        "GET",
+						DisplayName: "Get me",
+					},
+				},
+			},
+		},
+		[]map[string]interface{}{
+			{"verb": "GET", "handler": "GetMe", "path": "/test"},
+			{"verb": "POST", "handler": "PostMe", "path": "/test"},
+		},
+	},
+	{
+		// test URI parameters with nested resource
+		&raml.APIDefinition{
+			Resources: map[string]raml.Resource{
+				"/{foo}": raml.Resource{
+					Get: &raml.Method{
+						Name:        "GET",
+						DisplayName: "Get me",
+					},
+					UriParameters: map[string]raml.NamedParameter{
+						"foo": raml.NamedParameter{
+							Pattern: &patt1,
+						},
+					},
+					Nested: map[string]*raml.Resource{
+						"/{bar}": &raml.Resource{
+							Get: &raml.Method{
+								Name:        "GET",
+								DisplayName: "Nested get",
+							},
+							UriParameters: map[string]raml.NamedParameter{
+								"bar": raml.NamedParameter{
+									Pattern: &patt2,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		[]map[string]interface{}{
+			{
+				"verb":    "GET",
+				"handler": "GetMe",
+				"path":    "/{foo}",
+				"uri_params": []map[string]string{
+					{
+						"key":     "foo",
+						"pattern": "[a-z]",
+					},
+				},
+			},
+			{
+				"verb":    "GET",
+				"handler": "NestedGet",
+				"path":    "/{foo}/{bar}",
+				"uri_params": []map[string]string{
+					{
+						"key":     "foo",
+						"pattern": "[a-z]",
+					},
+					{
+						"key":     "bar",
+						"pattern": "[0-9]",
+					},
+				},
+			},
+		},
+	},
+	{
+		// test query parameters
+		&raml.APIDefinition{
+			Resources: map[string]raml.Resource{
+				"/query": raml.Resource{
+					Get: &raml.Method{
+						Name:        "GET",
+						DisplayName: "Get me",
+						QueryParameters: map[string]raml.NamedParameter{
+							"foo": raml.NamedParameter{
+								Pattern:  &patt1,
+								Required: true,
+							},
+							"bar": raml.NamedParameter{
+								Pattern:  &patt2,
+								Required: false,
+							},
+						},
+					},
+				},
+			},
+		},
+		[]map[string]interface{}{
+			{
+				"verb":    "GET",
+				"handler": "GetMe",
+				"path":    "/query",
+				"query_params": []map[string]string{
+					{
+						"key":      "foo",
+						"pattern":  "[a-z]",
+						"required": "true",
+					},
+					{
+						"key":      "bar",
+						"pattern":  "[0-9]",
+						"required": "false",
+					},
+				},
+			},
+		},
+	},
+}
 
-	count := len(endpoints)
-	if count != 7 {
-		t.Errorf("expected 7 endpoints, got %d", count)
-	}
-
-	expectedHandlers := []string{"Get", "Put", "Post", "Patch", "Delete", "Head", "NestedGet"}
-	for _, h := range expectedHandlers {
-		if handlerNotFound(h, endpoints) {
-			t.Errorf(`expected handler name "%s", not found`, h)
-		}
-	}
-
-	e1 := findEndpoint("GET", "/testapi/{foo}", endpoints)
-	path := e1.Path
-	if path != "/testapi/{foo}" {
-		t.Errorf(`expected "/testapi/{foo}", got "%s"`, path)
-	}
-	if len(e1.URIParameters) != 1 {
-		t.Errorf("expected 1 URIParameter, got %d", len(e1.URIParameters))
-	}
-	p1 := e1.URIParameters[0]
-	if p1.Key != "foo" ||
-		p1.Pattern != "[0-9]{5}" ||
-		p1.Type != "string" ||
-		p1.Required != false {
-		t.Errorf("unexpected parameter values: %#v", p1)
-	}
-
-	e2 := findEndpoint("GET", "/testapi/{foo}/{bar}", endpoints)
-	if len(e2.URIParameters) != 2 {
-		t.Errorf("expected 2 URIParameters, got %d", len(e2.URIParameters))
-	}
-
-	if p1 != e2.URIParameters[0] {
-		t.Errorf("expected endpoint to contain parameter %#v", p1)
-	}
-
-	p2 := e2.URIParameters[1]
-	if p2.Key != "bar" ||
-		p2.Pattern != "[a-z]{5}" ||
-		p2.Type != "string" ||
-		p2.Required != true {
-		t.Errorf("unexpected parameter values: %#v", p2)
-	}
-
-	expectedVerbs := []string{"GET", "PUT", "POST", "PATCH", "DELETE", "HEAD"}
-	for _, v := range expectedVerbs {
-		if verbNotFound(v, endpoints) {
-			t.Errorf(`expected verb "%s", not found`, v)
-		}
-	}
-
-	// Query parameters
-	queries := e1.QueryParameters
-	if len(queries) != 2 {
-		t.Errorf("expected 1 query string parameter, got %d", len(queries))
-	}
-
-	// query map {key: required}
-	expectedQueries := map[string]bool{"Country": true, "City": false}
-	for key, req := range expectedQueries {
-		if queryNotFound(key, req, queries) {
-			t.Errorf("expected parameter: %s, required: %t, none found", key, req)
-		}
+func TestProcess(t *testing.T) {
+	_, err := Process("fixtures/valid.raml")
+	if err != nil {
+		t.Error("could not process valid RAML file")
 	}
 }
 
-func handlerNotFound(handler string, eps []*Endpoint) bool {
-	for _, ep := range eps {
-		if ep.Handler == handler {
-			return false
+func TestEndpoints(t *testing.T) {
+	for _, data := range TestData {
+		Build(data.api, testFunc)
+		if !checkEndpoints(t, data.expected, endpoints) {
+			t.Errorf("expected endpoint with: %s", data.expected)
 		}
+		endpoints = make([]*Endpoint, 0)
 	}
-
-	return true
 }
 
-func verbNotFound(verb string, eps []*Endpoint) bool {
-	for _, ep := range eps {
-		if ep.Verb == verb {
-			return false
+func checkEndpoints(t *testing.T, exp []map[string]interface{}, got []*Endpoint) bool {
+	var foundHandler, foundPath, foundVerb bool
+	var found int
+
+	if len(exp) != len(got) {
+		t.Errorf("expected %d endpoints, got %d", len(exp), len(got))
+	}
+
+	for _, e := range exp {
+		for _, ep := range got {
+
+			foundHandler = true
+			if ep.Handler != e["handler"] {
+				foundHandler = false
+			}
+
+			foundPath = true
+			if ep.Path != e["path"] {
+				foundPath = false
+			}
+
+			foundVerb = true
+			if ep.Verb != e["verb"] {
+				foundVerb = false
+			}
+
+			if foundHandler && foundPath && foundVerb {
+				found += 1
+				if uParams, ok := e["uri_params"]; ok {
+					u := uParams.([]map[string]string)
+					if !checkParameters(t, u, ep.URIParameters) {
+						t.Errorf("expected uri parameters: %s", u)
+					}
+				}
+				if qParams, ok := e["query_params"]; ok {
+					q := qParams.([]map[string]string)
+					if !checkParameters(t, q, ep.QueryParameters) {
+						t.Errorf("expected query parameters: %s", q)
+					}
+				}
+			}
 		}
 	}
 
-	return true
+	return found == len(exp)
 }
 
-func queryNotFound(key string, req bool, qps []*Parameter) bool {
-	for _, qp := range qps {
-		if qp.Key == key && qp.Required == req {
-			return false
+func checkParameters(t *testing.T, exp []map[string]string, got []*Parameter) bool {
+	var foundKey, foundPatt, foundReq bool
+	var found int
+
+	if len(got) != len(exp) {
+		t.Errorf("expected %d parameters, got %d", len(exp), len(got))
+	}
+
+	for _, expParam := range exp {
+		for _, gotParam := range got {
+			foundKey = true
+			if key, ok := expParam["key"]; ok {
+				if key != gotParam.Key {
+					foundKey = false
+				}
+			}
+
+			foundPatt = true
+			if patt, ok := expParam["pattern"]; ok {
+				if patt != gotParam.Pattern {
+					foundPatt = false
+				}
+			}
+
+			foundReq = true
+			if req, ok := expParam["required"]; ok {
+				// convert bool to string
+				gotReq := fmt.Sprintf("%t", gotParam.Required)
+				if req != gotReq {
+					foundReq = false
+				}
+			}
+
+			if foundKey && foundPatt && foundReq {
+				found += 1
+			}
 		}
 	}
 
-	return true
-}
-
-func findEndpoint(verb, path string, eps []*Endpoint) *Endpoint {
-	for _, ep := range eps {
-		if ep.Verb == verb && ep.Path == path {
-			return ep
-		}
-	}
-
-	return nil
+	return found == len(exp)
 }
