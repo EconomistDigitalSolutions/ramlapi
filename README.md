@@ -24,15 +24,49 @@ in the RAML file. The router can then hook the data up however it likes.
 
 #### EXAMPLES
 
+##### STANDARD LIBRARY
+
+##### PAT
+
+```go
+
+var RouteMap = map[string]http.HandlerFunc{
+
+	"Root":    Root,
+	"Version": Version,
+}
+
+func main() {
+  router := pat.New()
+  api, _ := ramlapi.Process(f)
+
+  ramlapi.Build(api, routerFunc)
+  log.Fatal(http.ListenAndServe(":9494", router))
+}
+
+func routerFunc(ep *ramlapi.Endpoint) {
+	router.Add(ep.Verb, ep.Path, RouteMap[ep.Handler])
+}
+```
+
 ##### GORILLA MUX
 
 ```go
-router = mux.NewRouter().StrictSlash(true)
-api, err := ramlapi.Process(f)
-if err != nil {
-	log.Fatal(err)
+
+var RouteMap = map[string]http.HandlerFunc{
+
+	"Root":    Root,
+	"Version": Version,
 }
-ramlapi.Build(api, routerFunc)
+
+func main() {
+  router := mux.NewRouter().StrictSlash(true)
+  api, _ := ramlapi.Process(f)
+
+  ramlapi.Build(api, routerFunc)
+  log.Fatal(http.ListenAndServe(":9494", router))
+
+}
 
 func routerFunc(ep *ramlapi.Endpoint) {
 	route := router.
@@ -46,6 +80,61 @@ func routerFunc(ep *ramlapi.Endpoint) {
 		} else {
 			route.Queries(param.Key, "")
 		}
+	}
+}
+```
+
+##### ECHO
+
+```go
+
+var RouteMap = map[string]func(c *echo.Context) error{
+
+	"Root":    Root,
+	"Version": Version,
+}
+
+func main() {
+	router := echo.New()
+
+  api, _ := ramlapi.ProcessRAML("../api.raml")
+
+	ramlapi.Build(api, routerFunc)
+
+	router.Run(":9494")
+}
+
+func routerFunc(ep *ramlapi.Endpoint) {
+	switch ep.Verb {
+	case "GET":
+		router.Get(ep.Path, RouteMap[ep.Handler])
+	}
+}
+```
+
+##### HTTPROUTER
+
+```go
+
+var RouteMap = map[string]httprouter.Handle{
+
+	"Root":    Root,
+	"Version": Version,
+}
+
+func main() {
+	api, _ := ramlapi.ProcessRAML("../api.raml")
+
+	router := httprouter.New()
+	ramlapi.Build(api, routerFunc)
+
+	log.Fatal(http.ListenAndServe(":9494", router))
+}
+
+func routerFunc(ep *ramlapi.Endpoint) {
+	switch ep.Verb {
+	case "GET":
+		router.GET(ep.Path, RouteMap[ep.Handler])
 	}
 }
 ```
