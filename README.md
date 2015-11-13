@@ -108,16 +108,30 @@ func main() {
 }
 
 func routerFunc(ep *ramlapi.Endpoint) {
+	path := ep.Path
+
+	for _, up := range ep.URIParameters {
+		if up.Pattern != "" {
+			path = strings.Replace(
+				path,
+				fmt.Sprintf("{%s}", up.Key),
+				fmt.Sprintf("{%s:%s}", up.Key, up.Pattern),
+				1)
+		}
+	}
+
 	route := router.
 		Methods(ep.Verb).
-		Path(ep.Path).
+		Path(path).
 		Handler(RouteMap[ep.Handler])
 
-	for _, param := range ep.QueryParameters {
-		if param.Pattern != "" {
-			route.Queries(param.Key, fmt.Sprintf("{%s:%s}", param.Key, param.Pattern))
-		} else {
-			route.Queries(param.Key, "")
+	for _, qp := range ep.QueryParameters {
+		if qp.Required {
+			if qp.Pattern != "" {
+				route.Queries(qp.Key, fmt.Sprintf("{%s:%s}", qp.Key, qp.Pattern))
+			} else {
+				route.Queries(qp.Key, "")
+			}
 		}
 	}
 }
