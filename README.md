@@ -15,6 +15,10 @@ The ramlapi codebase contains two packages:
 
 You now have a set of HTTP handlers built from your RAML specification.
 
+Right now raml-gen only supports routers that use the standard http.Handlerfunc handlers. If you want to use something like
+Echo or HttpRouter you'll need to make some amendments as described in the examples below.
+
+
 #### HOW TO RAMLAPI
 
 The ramlapi package makes no assumptions about your choice of router as the
