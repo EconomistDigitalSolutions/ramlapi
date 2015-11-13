@@ -1,3 +1,7 @@
+### 1.1.0
+
+* Add support for URI parameters.
+
 ### 1.0.0
 
 * Change API to pass a struct to the consuming code.
@@ -12,10 +16,10 @@ Bring ramlgen in line with upstream ramlapi API changes
 
 Revert partial query parameter support
 
-### 0.2.0 
+### 0.2.0
 
 Add query parameter support
 
 ### 0.1.0
 
-Initial release 
+Initial release
