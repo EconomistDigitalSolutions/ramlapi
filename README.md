@@ -26,6 +26,29 @@ in the RAML file. The router can then hook the data up however it likes.
 
 ##### STANDARD LIBRARY
 
+```go
+
+var RouteMap = map[string]http.HandlerFunc{
+
+  "Root":    Root,
+  "Version": Version,
+}
+
+func main() {
+  router := http.NewServeMux()
+  api, _ := ramlapi.Process("api.raml")
+
+  ramlapi.Build(api, routerFunc)
+  log.Fatal(http.ListenAndServe(":9494", router))
+}
+
+func routerFunc(ep *ramlapi.Endpoint) {
+  handler := http.HandlerFunc(RouteMap[ep.Handler])
+  router.Handle(ep.Path, handler)
+}
+
+```
+
 ##### PAT
 
 ```go
@@ -36,9 +59,17 @@ var RouteMap = map[string]http.HandlerFunc{
 	"Version": Version,
 }
 
+func Version(w http.ResponseWriter, r *http.Request) {
+  w.WriteHeader(http.StatusOK)
+}
+
+func Root(w http.ResponseWriter, r *http.Request) {
+  w.WriteHeader(http.StatusOK)
+}
+
 func main() {
   router := pat.New()
-  api, _ := ramlapi.Process(f)
+  api, _ := ramlapi.Process("api.raml")
 
   ramlapi.Build(api, routerFunc)
   log.Fatal(http.ListenAndServe(":9494", router))
@@ -59,9 +90,17 @@ var RouteMap = map[string]http.HandlerFunc{
 	"Version": Version,
 }
 
+func Version(w http.ResponseWriter, r *http.Request) {
+  w.WriteHeader(http.StatusOK)
+}
+
+func Root(w http.ResponseWriter, r *http.Request) {
+  w.WriteHeader(http.StatusOK)
+}
+
 func main() {
   router := mux.NewRouter().StrictSlash(true)
-  api, _ := ramlapi.Process(f)
+  api, _ := ramlapi.Process("api.raml")
 
   ramlapi.Build(api, routerFunc)
   log.Fatal(http.ListenAndServe(":9494", router))
@@ -94,10 +133,18 @@ var RouteMap = map[string]func(c *echo.Context) error{
 	"Version": Version,
 }
 
+func Version(c *echo.Context) error {
+  return c.String(http.StatusOK, "VERSION")
+}
+
+func Root(c *echo.Context) error {
+  return c.String(http.StatusOK, "HOME")
+}
+
 func main() {
 	router := echo.New()
 
-  api, _ := ramlapi.ProcessRAML("../api.raml")
+  api, _ := ramlapi.ProcessRAML("api.raml")
 
 	ramlapi.Build(api, routerFunc)
 
@@ -122,8 +169,16 @@ var RouteMap = map[string]httprouter.Handle{
 	"Version": Version,
 }
 
+func Version(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+  fmt.Fprint(w, "VERSION\n")
+}
+
+func Root(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+  fmt.Fprint(w, "HOME\n")
+}
+
 func main() {
-	api, _ := ramlapi.ProcessRAML("../api.raml")
+	api, _ := ramlapi.ProcessRAML("api.raml")
 
 	router := httprouter.New()
 	ramlapi.Build(api, routerFunc)
