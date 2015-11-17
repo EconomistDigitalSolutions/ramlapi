@@ -7,6 +7,18 @@ The ramlapi codebase contains two packages:
 * Ramlapi - used to parse a RAML file and wire it up to a router.
 * Ramlgen - used to parse a RAML file and write a set of HTTP handlers.
 
+#### RAML Compatibility
+
+The current version of the Ramlapi and Ramlgen packages supports *most* of the 0.8 RAML specification.
+
+Our intention is to implement further support as:
+
+1. Preliminary 1.0 support
+2. Full 1.0 support
+3. Additional 0.8 support
+
+Enhancing 0.8 support is a low priority as users are strongly urged to migrate to 1.0 as soon as possible
+
 #### HOW TO RAML-GEN
 
 1. Build your API design in RAML.
