@@ -30,6 +30,29 @@ You now have a set of HTTP handlers built from your RAML specification.
 Right now raml-gen only supports routers that use the standard http.Handlerfunc handlers. If you want to use something like
 Echo or HttpRouter you'll need to make some amendments as described in the examples below.
 
+The handlers map generated in `handlers_gen.go` contains camel-cased
+key/value names derived from the `displayName` property in your RAML file.
+
+This RAML fragment:
+
+```yaml
+/version:
+  get:
+    displayName: Version info
+/docs:
+  get:
+    displayName: documentation
+```
+
+Will generates this handler map:
+
+```go
+// RouteMap maps RAML identifiers to application handlers.
+var RouteMap = map[string]http.HandlerFunc{
+    "VersionInfo":   VersionInfo,
+    "Documentation": Documentation,
+}
+```
 
 #### HOW TO RAMLAPI
 
