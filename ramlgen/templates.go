@@ -21,7 +21,7 @@ const mapEnd = `
 `
 
 const handlerText = `
-// Handler for rest URI {{.Path}} and the action {{.Verb}}
+// {{.Name}} - handler for URI {{.Path}} HTTP verb {{.Verb}}
 // {{.Doc}}
 func {{.Name}}(w http.ResponseWriter, r *http.Request) {
 	json, _ := json.Marshal(map[string]string{
