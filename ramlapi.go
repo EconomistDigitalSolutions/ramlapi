@@ -3,6 +3,7 @@ package ramlapi
 import (
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
@@ -130,6 +131,7 @@ func processResource(parent, name string, resource *raml.Resource, params []*Par
 
 	for _, ep := range s {
 		ep.Path = path
+		log.Println("processing", ep)
 		routerFunc(ep)
 	}
 
