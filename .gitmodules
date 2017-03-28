@@ -1,0 +1,6 @@
+[submodule "vendor/github.com/buddhamagnet/raml"]
+	path = vendor/github.com/buddhamagnet/raml
+	url = http://github.com/buddhamagnet/raml
+[submodule "vendor/github.com/buddhamagnet/yaml"]
+	path = vendor/github.com/buddhamagnet/yaml
+	url = http://github.com/buddhamagnet/yaml
